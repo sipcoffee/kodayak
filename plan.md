@@ -58,7 +58,7 @@
 - [x] Pricing page (plan comparison, FAQ)
 - [x] Login page with Google OAuth option
 - [x] Signup page with Google OAuth option
-- [ ] About/Contact page
+- [x] About/Contact page
 
 ### Phase 3: Client Dashboard
 - [x] Dashboard layout with sidebar navigation
@@ -66,19 +66,19 @@
 - [x] Events list page (skeleton)
 - [x] Billing page (skeleton)
 - [x] Settings page (skeleton)
-- [ ] Event creation wizard
-- [ ] QR code generation
-- [ ] Gallery management
-- [ ] Event settings (active/inactive, expiry)
-- [ ] Photo download (individual/bulk)
+- [x] Event creation wizard
+- [x] QR code generation
+- [x] Gallery management
+- [x] Event settings (active/inactive, expiry)
+- [x] Photo download (individual/bulk)
 
 ### Phase 4: Admin Dashboard
 - [x] Admin layout with sidebar navigation
 - [x] Admin overview page (stats cards)
-- [ ] Client management (full CRUD)
-- [ ] Event overview (full CRUD)
-- [ ] Revenue analytics
-- [ ] Plan management
+- [x] Client management (full CRUD)
+- [x] Event overview (full CRUD)
+- [x] Revenue analytics
+- [x] Plan management
 
 ### Phase 5: Camera & Gallery (PWA)
 - [ ] PWA manifest and service worker
@@ -232,7 +232,7 @@ model Event {
   isGalleryPublic Boolean  @default(false)
 
   // Customization
-  primaryColor String?     @default("#F97316")
+  primaryColor String?     @default("#E91E63")
   welcomeMessage String?
 
   createdAt    DateTime    @default(now())
@@ -573,7 +573,7 @@ kodayak/
   "start_url": "/",
   "display": "standalone",
   "background_color": "#000000",
-  "theme_color": "#F97316",
+  "theme_color": "#E91E63",
   "orientation": "portrait",
   "icons": [
     {
@@ -680,35 +680,35 @@ PAYMONGO_WEBHOOK_SECRET=whsk_xxx
 - [x] Create database schema
 - [x] Create seed file for plans
 - [x] Implement session management
-- [ ] Run migrations (requires PostgreSQL running)
-- [ ] Run seed script
+- [x] Run migrations (database synced)
+- [x] Run seed script (pricing plans seeded)
 
-### Phase 3: Public Pages (Week 2) ✅ MOSTLY COMPLETED
+### Phase 3: Public Pages (Week 2) ✅ COMPLETED
 - [x] Build landing page
 - [x] Build pricing page
 - [x] Create marketing layout with header/footer
 - [x] Implement responsive design
 - [ ] Add animations (framer-motion optional)
-- [ ] About/Contact page
+- [x] About/Contact page
 
-### Phase 4: Client Dashboard (Week 2-3) 🔄 IN PROGRESS
+### Phase 4: Client Dashboard (Week 2-3) ✅ COMPLETED
 - [x] Dashboard overview page (skeleton)
 - [x] Events list page (skeleton)
 - [x] Billing page (skeleton)
 - [x] Settings page (skeleton)
-- [ ] Event creation form
-- [ ] Event details page
-- [ ] QR code generation
-- [ ] Gallery view with photo grid
-- [ ] Bulk download functionality
+- [x] Event creation form
+- [x] Event details page
+- [x] QR code generation
+- [x] Gallery view with photo grid
+- [x] Bulk download functionality
 
-### Phase 5: Admin Dashboard (Week 3) 🔄 IN PROGRESS
+### Phase 5: Admin Dashboard (Week 3) ✅ COMPLETED
 - [x] Admin layout and navigation
 - [x] Admin overview page (skeleton)
-- [ ] Client management page (full CRUD)
-- [ ] Event overview page (full CRUD)
-- [ ] Analytics dashboard
-- [ ] Plan management
+- [x] Client management page (full CRUD)
+- [x] Event overview page (full CRUD)
+- [x] Analytics dashboard
+- [x] Plan management
 
 ### Phase 6: Camera & PWA (Week 3-4)
 - [ ] PWA manifest and icons
