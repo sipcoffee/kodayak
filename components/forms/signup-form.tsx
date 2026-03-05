@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -26,7 +27,6 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { authClient } from "@/lib/auth-client";
 import { FaGoogle } from "react-icons/fa";
-import { Camera } from "lucide-react";
 
 const signupSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -77,9 +77,13 @@ export default function SignupForm() {
     <div className="flex min-h-screen items-center justify-center px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary">
-            <Camera className="h-6 w-6 text-primary-foreground" />
-          </div>
+          <Image
+            src="/logo_square.png"
+            alt="Kodayak Logo"
+            width={48}
+            height={48}
+            className="mx-auto mb-4 rounded-xl"
+          />
           <CardTitle className="text-2xl font-bold">Create an account</CardTitle>
           <CardDescription>
             Start capturing moments from every angle
