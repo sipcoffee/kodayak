@@ -128,7 +128,7 @@ model Event {
   isGalleryPublic Boolean     @default(false)
 
   // Customization
-  primaryColor    String?     @default("#F97316")
+  primaryColor    String?     @default("#E91E63")
   welcomeMessage  String?
 
   createdAt       DateTime    @default(now())
