@@ -1,6 +1,6 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { Camera } from "lucide-react";
 
 export default function MarketingLayout({
   children,
@@ -13,9 +13,13 @@ export default function MarketingLayout({
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-              <Camera className="h-5 w-5 text-primary-foreground" />
-            </div>
+            <Image
+              src="/logo_square.png"
+              alt="Kodayak Logo"
+              width={36}
+              height={36}
+              className="rounded-lg"
+            />
             <span className="text-xl font-bold">Kodayak</span>
           </Link>
 
@@ -37,6 +41,12 @@ export default function MarketingLayout({
               className="text-sm font-medium text-muted-foreground hover:text-foreground"
             >
               How it Works
+            </Link>
+            <Link
+              href="/about"
+              className="text-sm font-medium text-muted-foreground hover:text-foreground"
+            >
+              About
             </Link>
           </nav>
 
@@ -60,9 +70,13 @@ export default function MarketingLayout({
           <div className="grid gap-8 md:grid-cols-4">
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-                  <Camera className="h-5 w-5 text-primary-foreground" />
-                </div>
+                <Image
+                  src="/logo_square.png"
+                  alt="Kodayak Logo"
+                  width={32}
+                  height={32}
+                  className="rounded-lg"
+                />
                 <span className="text-lg font-bold">Kodayak</span>
               </div>
               <p className="text-sm text-muted-foreground">
@@ -87,6 +101,11 @@ export default function MarketingLayout({
                 <li>
                   <Link href="/#how-it-works" className="hover:text-foreground">
                     How it Works
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/about" className="hover:text-foreground">
+                    About Us
                   </Link>
                 </li>
               </ul>
