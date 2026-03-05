@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import {
-  Camera,
   LayoutDashboard,
   Calendar,
   CreditCard,
@@ -57,9 +57,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="flex h-full flex-col">
           {/* Logo */}
           <div className="flex h-16 items-center gap-2 border-b px-6">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-              <Camera className="h-5 w-5 text-primary-foreground" />
-            </div>
+            <Image
+              src="/logo_square.png"
+              alt="Kodayak Logo"
+              width={32}
+              height={32}
+              className="rounded-lg"
+            />
             <span className="text-lg font-bold">Kodayak</span>
             <button
               className="ml-auto lg:hidden"
