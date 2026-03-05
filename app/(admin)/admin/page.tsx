@@ -1,9 +1,78 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Calendar, Image, CreditCard } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Users, Calendar, Images, CreditCard, Loader2, ArrowRight } from "lucide-react";
+
+interface RecentClient {
+  id: string;
+  name: string | null;
+  email: string;
+  company: string | null;
+  createdAt: string;
+  _count: { events: number };
+}
+
+interface RecentPayment {
+  id: string;
+  amount: string;
+  status: string;
+  paidAt: string;
+  user: { name: string | null; email: string };
+  plan: { name: string };
+}
+
+interface AdminStats {
+  totalClients: number;
+  totalEvents: number;
+  activeEvents: number;
+  totalPhotos: number;
+  totalRevenue: number;
+  recentClients: RecentClient[];
+  recentPayments: RecentPayment[];
+}
+
+function formatCurrency(amount: number): string {
+  return new Intl.NumberFormat("en-PH", {
+    style: "currency",
+    currency: "PHP",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
 
 export default function AdminDashboardPage() {
+  const [stats, setStats] = useState<AdminStats | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchStats() {
+      try {
+        const response = await fetch("/api/admin/stats");
+        if (!response.ok) throw new Error("Failed to fetch stats");
+        const data = await response.json();
+        setStats(data);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchStats();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex h-[50vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -23,7 +92,7 @@ export default function AdminDashboardPage() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
+            <div className="text-2xl font-bold">{stats?.totalClients || 0}</div>
             <p className="text-xs text-muted-foreground">registered users</p>
           </CardContent>
         </Card>
@@ -36,8 +105,10 @@ export default function AdminDashboardPage() {
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
-            <p className="text-xs text-muted-foreground">events created</p>
+            <div className="text-2xl font-bold">{stats?.totalEvents || 0}</div>
+            <p className="text-xs text-muted-foreground">
+              {stats?.activeEvents || 0} active
+            </p>
           </CardContent>
         </Card>
 
@@ -46,10 +117,10 @@ export default function AdminDashboardPage() {
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Total Photos
             </CardTitle>
-            <Image className="h-4 w-4 text-muted-foreground" />
+            <Images className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
+            <div className="text-2xl font-bold">{stats?.totalPhotos || 0}</div>
             <p className="text-xs text-muted-foreground">photos uploaded</p>
           </CardContent>
         </Card>
@@ -62,7 +133,9 @@ export default function AdminDashboardPage() {
             <CreditCard className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₱0</div>
+            <div className="text-2xl font-bold">
+              {formatCurrency(Number(stats?.totalRevenue) || 0)}
+            </div>
             <p className="text-xs text-muted-foreground">total revenue</p>
           </CardContent>
         </Card>
@@ -71,20 +144,82 @@ export default function AdminDashboardPage() {
       {/* Recent Activity */}
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Recent Clients</CardTitle>
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/admin/clients">
+                View all <ArrowRight className="ml-1 h-4 w-4" />
+              </Link>
+            </Button>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">No clients yet.</p>
+            {!stats || stats.recentClients.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No clients yet.</p>
+            ) : (
+              <div className="space-y-4">
+                {stats.recentClients.map((client) => (
+                  <div
+                    key={client.id}
+                    className="flex items-center justify-between"
+                  >
+                    <div>
+                      <p className="font-medium">{client.name || "—"}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {client.email}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm">{client._count.events} events</p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(client.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Recent Payments</CardTitle>
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/admin/analytics">
+                View all <ArrowRight className="ml-1 h-4 w-4" />
+              </Link>
+            </Button>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">No payments yet.</p>
+            {!stats || stats.recentPayments.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No payments yet.</p>
+            ) : (
+              <div className="space-y-4">
+                {stats.recentPayments.map((payment) => (
+                  <div
+                    key={payment.id}
+                    className="flex items-center justify-between"
+                  >
+                    <div>
+                      <p className="font-medium">
+                        {payment.user.name || payment.user.email}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {payment.plan.name}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-medium">
+                        {formatCurrency(Number(payment.amount))}
+                      </p>
+                      <Badge variant="default" className="bg-green-500">
+                        Paid
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
