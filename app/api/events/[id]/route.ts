@@ -1,0 +1,113 @@
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { headers } from "next/headers";
+import { NextRequest, NextResponse } from "next/server";
+
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { id } = await params;
+
+  const event = await prisma.event.findFirst({
+    where: {
+      id,
+      userId: session.user.id,
+    },
+    include: {
+      photos: {
+        orderBy: { createdAt: "desc" },
+      },
+      _count: {
+        select: { photos: true },
+      },
+    },
+  });
+
+  if (!event) {
+    return NextResponse.json({ error: "Event not found" }, { status: 404 });
+  }
+
+  return NextResponse.json(event);
+}
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { id } = await params;
+  const body = await request.json();
+
+  const event = await prisma.event.findFirst({
+    where: {
+      id,
+      userId: session.user.id,
+    },
+  });
+
+  if (!event) {
+    return NextResponse.json({ error: "Event not found" }, { status: 404 });
+  }
+
+  const updatedEvent = await prisma.event.update({
+    where: { id },
+    data: {
+      name: body.name,
+      description: body.description,
+      status: body.status,
+      photoLimit: body.photoLimit ? parseInt(body.photoLimit) : undefined,
+      expiresAt: body.expiresAt ? new Date(body.expiresAt) : undefined,
+      isGalleryPublic: body.isGalleryPublic,
+      primaryColor: body.primaryColor,
+      welcomeMessage: body.welcomeMessage,
+    },
+  });
+
+  return NextResponse.json(updatedEvent);
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { id } = await params;
+
+  const event = await prisma.event.findFirst({
+    where: {
+      id,
+      userId: session.user.id,
+    },
+  });
+
+  if (!event) {
+    return NextResponse.json({ error: "Event not found" }, { status: 404 });
+  }
+
+  await prisma.event.delete({ where: { id } });
+
+  return NextResponse.json({ success: true });
+}
