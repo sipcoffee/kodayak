@@ -3,8 +3,10 @@
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import useSWR from "swr";
-import { Camera, Download, ArrowLeft, Loader2, AlertCircle, X } from "lucide-react";
+import { Camera, Download, ArrowLeft, Loader2, AlertCircle, X, Upload, Trash2, CloudUpload } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { useLocalPhotos, LocalPhoto } from "@/hooks/use-local-photos";
 import { fetcher } from "@/lib/swr";
 
 interface Photo {
@@ -34,7 +36,9 @@ export default function GalleryPage() {
   const router = useRouter();
   const slug = params.slug as string;
 
-  const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
+  const [selectedPhoto, setSelectedPhoto] = useState<Photo | LocalPhoto | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
 
   // Fetch event data
   const {
@@ -46,21 +50,89 @@ export default function GalleryPage() {
     shouldRetryOnError: false,
   });
 
-  // Fetch photos (only when event is loaded and gallery is public)
+  // Local photos hook
+  const {
+    photos: localPhotos,
+    removePhoto,
+    clearPhotos,
+    isLoading: localPhotosLoading,
+  } = useLocalPhotos(event?.id || "");
+
+  // Fetch uploaded photos
   const {
     data: photosData,
     isLoading: photosLoading,
+    mutate: mutatePhotos,
   } = useSWR<PhotosResponse>(
     event?.isGalleryPublic ? `/api/photos?eventId=${event.id}` : null,
     fetcher,
     {
-      refreshInterval: 10000, // Poll every 10 seconds for real-time updates
+      refreshInterval: 10000,
       revalidateOnFocus: true,
     }
   );
 
-  const photos = photosData?.photos ?? [];
-  const isLoading = eventLoading || (event?.isGalleryPublic && photosLoading);
+  const uploadedPhotos = photosData?.photos ?? [];
+  const isLoading = eventLoading || localPhotosLoading || (event?.isGalleryPublic && photosLoading);
+
+  const handleUploadAll = async () => {
+    if (localPhotos.length === 0) return;
+
+    setIsUploading(true);
+    setUploadProgress({ current: 0, total: localPhotos.length });
+
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (let i = 0; i < localPhotos.length; i++) {
+      const photo = localPhotos[i];
+      setUploadProgress({ current: i + 1, total: localPhotos.length });
+
+      try {
+        const formData = new FormData();
+        formData.append("photo", photo.blob, `photo-${Date.now()}.jpg`);
+        formData.append("eventId", photo.eventId);
+        formData.append("guestId", photo.guestId);
+        if (photo.guestName) formData.append("guestName", photo.guestName);
+        formData.append("width", photo.width.toString());
+        formData.append("height", photo.height.toString());
+
+        const response = await fetch("/api/photos", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (response.ok) {
+          await removePhoto(photo.id);
+          successCount++;
+        } else {
+          errorCount++;
+        }
+      } catch {
+        errorCount++;
+      }
+    }
+
+    setIsUploading(false);
+    mutatePhotos();
+
+    if (successCount > 0) {
+      toast.success(`Uploaded ${successCount} photo${successCount > 1 ? "s" : ""}`);
+    }
+    if (errorCount > 0) {
+      toast.error(`Failed to upload ${errorCount} photo${errorCount > 1 ? "s" : ""}`);
+    }
+  };
+
+  const handleDeleteLocal = async (photo: LocalPhoto) => {
+    try {
+      await removePhoto(photo.id);
+      setSelectedPhoto(null);
+      toast.success("Photo deleted");
+    } catch {
+      toast.error("Failed to delete photo");
+    }
+  };
 
   const handleDownload = async (photo: Photo) => {
     try {
@@ -79,6 +151,10 @@ export default function GalleryPage() {
     }
   };
 
+  const isLocalPhoto = (photo: Photo | LocalPhoto): photo is LocalPhoto => {
+    return "dataUrl" in photo;
+  };
+
   // Loading state
   if (isLoading) {
     return (
@@ -93,8 +169,6 @@ export default function GalleryPage() {
     ? (eventError as Error & { status?: number }).status === 404
       ? "Event not found"
       : "Failed to load event"
-    : event && !event.isGalleryPublic
-    ? "This gallery is private"
     : null;
 
   if (errorMessage || !event) {
@@ -116,6 +190,7 @@ export default function GalleryPage() {
   }
 
   const primaryColor = event.primaryColor || "#E91E63";
+  const allPhotos = [...localPhotos, ...uploadedPhotos];
 
   return (
     <div className="min-h-screen bg-black">
@@ -133,14 +208,39 @@ export default function GalleryPage() {
             </Button>
             <div>
               <h1 className="text-lg font-semibold text-white">{event.name}</h1>
-              <p className="text-sm text-gray-400">{photos.length} photos</p>
+              <p className="text-sm text-gray-400">
+                {uploadedPhotos.length} uploaded
+                {localPhotos.length > 0 && `, ${localPhotos.length} pending`}
+              </p>
             </div>
           </div>
+
+          {/* Upload button */}
+          {localPhotos.length > 0 && (
+            <Button
+              onClick={handleUploadAll}
+              disabled={isUploading}
+              style={{ backgroundColor: primaryColor }}
+              className="text-white"
+            >
+              {isUploading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {uploadProgress.current}/{uploadProgress.total}
+                </>
+              ) : (
+                <>
+                  <CloudUpload className="mr-2 h-4 w-4" />
+                  Upload All ({localPhotos.length})
+                </>
+              )}
+            </Button>
+          )}
         </div>
       </header>
 
       {/* Empty state */}
-      {photos.length === 0 ? (
+      {allPhotos.length === 0 ? (
         <div className="flex min-h-[60vh] flex-col items-center justify-center p-4 text-center">
           <Camera className="mb-4 h-16 w-16 text-gray-600" />
           <h2 className="mb-2 text-xl font-semibold text-white">No photos yet</h2>
@@ -155,26 +255,72 @@ export default function GalleryPage() {
         </div>
       ) : (
         <>
-          {/* Photo grid */}
-          <div className="mx-auto max-w-7xl p-4">
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-              {photos.map((photo) => (
-                <button
-                  key={photo.id}
-                  onClick={() => setSelectedPhoto(photo)}
-                  className="group relative aspect-square overflow-hidden rounded-lg bg-gray-900"
+          {/* Pending photos section */}
+          {localPhotos.length > 0 && (
+            <div className="mx-auto max-w-7xl p-4">
+              <div className="mb-2 flex items-center justify-between">
+                <h2 className="text-sm font-medium text-yellow-500">
+                  Pending Upload ({localPhotos.length})
+                </h2>
+                <Button
+                  onClick={() => clearPhotos()}
+                  variant="ghost"
+                  size="sm"
+                  className="text-red-400 hover:bg-red-400/10 hover:text-red-300"
                 >
-                  <img
-                    src={photo.thumbnailUrl || photo.url}
-                    alt=""
-                    className="h-full w-full object-cover transition-transform group-hover:scale-105"
-                    loading="lazy"
-                  />
-                  <div className="absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/20" />
-                </button>
-              ))}
+                  <Trash2 className="mr-1 h-3 w-3" />
+                  Clear All
+                </Button>
+              </div>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+                {localPhotos.map((photo) => (
+                  <button
+                    key={photo.id}
+                    onClick={() => setSelectedPhoto(photo)}
+                    className="group relative aspect-square overflow-hidden rounded-lg bg-gray-900 ring-2 ring-yellow-500"
+                  >
+                    <img
+                      src={photo.dataUrl}
+                      alt=""
+                      className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/20" />
+                    <div className="absolute right-1 top-1 rounded-full bg-yellow-500 p-1">
+                      <Upload className="h-3 w-3 text-black" />
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* Uploaded photos section */}
+          {uploadedPhotos.length > 0 && (
+            <div className="mx-auto max-w-7xl p-4">
+              {localPhotos.length > 0 && (
+                <h2 className="mb-2 text-sm font-medium text-gray-400">
+                  Uploaded ({uploadedPhotos.length})
+                </h2>
+              )}
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+                {uploadedPhotos.map((photo) => (
+                  <button
+                    key={photo.id}
+                    onClick={() => setSelectedPhoto(photo)}
+                    className="group relative aspect-square overflow-hidden rounded-lg bg-gray-900"
+                  >
+                    <img
+                      src={photo.thumbnailUrl || photo.url}
+                      alt=""
+                      className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/20" />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Photo modal */}
           {selectedPhoto && (
@@ -196,26 +342,40 @@ export default function GalleryPage() {
                 onClick={(e) => e.stopPropagation()}
               >
                 <img
-                  src={selectedPhoto.url}
+                  src={isLocalPhoto(selectedPhoto) ? selectedPhoto.dataUrl : selectedPhoto.url}
                   alt=""
                   className="max-h-[85vh] max-w-full rounded-lg object-contain"
                 />
 
                 <div className="mt-4 flex items-center justify-between">
                   <div className="text-sm text-gray-400">
-                    {selectedPhoto.guestName && (
-                      <span>By {selectedPhoto.guestName}</span>
+                    {isLocalPhoto(selectedPhoto) ? (
+                      <span className="text-yellow-500">Pending upload</span>
+                    ) : (
+                      selectedPhoto.guestName && <span>By {selectedPhoto.guestName}</span>
                     )}
                   </div>
-                  <Button
-                    onClick={() => handleDownload(selectedPhoto)}
-                    variant="outline"
-                    size="sm"
-                    className="border-white text-white hover:bg-white/10"
-                  >
-                    <Download className="mr-2 h-4 w-4" />
-                    Download
-                  </Button>
+                  {isLocalPhoto(selectedPhoto) ? (
+                    <Button
+                      onClick={() => handleDeleteLocal(selectedPhoto)}
+                      variant="outline"
+                      size="sm"
+                      className="border-red-400 text-red-400 hover:bg-red-400/10"
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={() => handleDownload(selectedPhoto)}
+                      variant="outline"
+                      size="sm"
+                      className="border-white text-white hover:bg-white/10"
+                    >
+                      <Download className="mr-2 h-4 w-4" />
+                      Download
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>

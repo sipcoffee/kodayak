@@ -17,6 +17,7 @@ import {
   Settings,
   Trash2,
 } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -53,6 +54,7 @@ export default function EventDetailsPage() {
   const params = useParams();
   const router = useRouter();
   const [selectedPhotos, setSelectedPhotos] = useState<Set<string>>(new Set());
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const { data: event, isLoading, mutate } = useSWR<Event>(
     `/api/events/${params.id}`,
@@ -93,6 +95,46 @@ export default function EventDetailsPage() {
       link.click();
       document.body.removeChild(link);
       await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (!event || selectedPhotos.size === 0) return;
+
+    const count = selectedPhotos.size;
+    if (!confirm(`Are you sure you want to delete ${count} photo${count > 1 ? "s" : ""}? This action cannot be undone.`)) {
+      return;
+    }
+
+    setIsDeleting(true);
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const photoId of selectedPhotos) {
+      try {
+        const response = await fetch(`/api/photos/${photoId}`, {
+          method: "DELETE",
+        });
+
+        if (response.ok) {
+          successCount++;
+        } else {
+          errorCount++;
+        }
+      } catch {
+        errorCount++;
+      }
+    }
+
+    setIsDeleting(false);
+    setSelectedPhotos(new Set());
+    mutate();
+
+    if (successCount > 0) {
+      toast.success(`Deleted ${successCount} photo${successCount > 1 ? "s" : ""}`);
+    }
+    if (errorCount > 0) {
+      toast.error(`Failed to delete ${errorCount} photo${errorCount > 1 ? "s" : ""}`);
     }
   };
 
@@ -254,6 +296,19 @@ export default function EventDetailsPage() {
                 <>
                   <Button variant="outline" size="sm" onClick={deselectAllPhotos}>
                     Deselect All
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={handleBulkDelete}
+                    disabled={isDeleting}
+                  >
+                    {isDeleting ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="mr-2 h-4 w-4" />
+                    )}
+                    Delete ({selectedPhotos.size})
                   </Button>
                   <Button size="sm" onClick={handleBulkDownload}>
                     <Download className="mr-2 h-4 w-4" />

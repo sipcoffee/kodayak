@@ -50,11 +50,15 @@ export function CameraCapture({
     if (capturedBlob) {
       onCapture(capturedBlob);
       clearPreview();
+      // Restart camera after confirming
+      startCamera();
     }
   };
 
   const handleRetake = () => {
     clearPreview();
+    // Restart camera after retaking
+    startCamera();
   };
 
   const clearPreview = () => {
