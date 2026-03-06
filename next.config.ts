@@ -14,6 +14,7 @@ const withPWA = withPWAInit({
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   allowedDevOrigins: ["192.168.254.100"],
+  turbopack: {},
   // Enable PWA headers
   async headers() {
     return [
