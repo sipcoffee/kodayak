@@ -14,13 +14,14 @@ interface CameraState {
   error: string | null;
   facing: CameraFacing;
   hasMultipleCameras: boolean;
-  stream: MediaStream | null;
 }
 
 export function useCamera(options: UseCameraOptions = {}) {
   const { initialFacing = "environment" } = options;
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const facingRef = useRef<CameraFacing>(initialFacing);
 
   const [state, setState] = useState<CameraState>({
     isReady: false,
@@ -28,16 +29,18 @@ export function useCamera(options: UseCameraOptions = {}) {
     error: null,
     facing: initialFacing,
     hasMultipleCameras: false,
-    stream: null,
   });
 
   const stopStream = useCallback(() => {
-    if (state.stream) {
-      state.stream.getTracks().forEach((track) => track.stop());
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
     }
-  }, [state.stream]);
+  }, []);
 
-  const startCamera = useCallback(async (facing: CameraFacing = state.facing) => {
+  const startCamera = useCallback(async (facing?: CameraFacing) => {
+    const targetFacing = facing ?? facingRef.current;
+    facingRef.current = targetFacing;
     setState((prev) => ({ ...prev, isReady: false, error: null }));
 
     try {
@@ -52,12 +55,14 @@ export function useCamera(options: UseCameraOptions = {}) {
       // Get media stream
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
-          facingMode: facing,
+          facingMode: targetFacing,
           width: { ideal: 1920 },
           height: { ideal: 1080 },
         },
         audio: false,
       });
+
+      streamRef.current = stream;
 
       // Check for multiple cameras
       const devices = await navigator.mediaDevices.enumerateDevices();
@@ -73,9 +78,8 @@ export function useCamera(options: UseCameraOptions = {}) {
       setState((prev) => ({
         ...prev,
         isReady: true,
-        facing,
+        facing: targetFacing,
         hasMultipleCameras,
-        stream,
         error: null,
       }));
     } catch (error) {
@@ -86,12 +90,12 @@ export function useCamera(options: UseCameraOptions = {}) {
         error: message,
       }));
     }
-  }, [state.facing, stopStream]);
+  }, [stopStream]);
 
   const switchCamera = useCallback(async () => {
-    const newFacing: CameraFacing = state.facing === "user" ? "environment" : "user";
+    const newFacing: CameraFacing = facingRef.current === "user" ? "environment" : "user";
     await startCamera(newFacing);
-  }, [state.facing, startCamera]);
+  }, [startCamera]);
 
   const capturePhoto = useCallback(async (): Promise<Blob | null> => {
     if (!videoRef.current || !canvasRef.current) {
