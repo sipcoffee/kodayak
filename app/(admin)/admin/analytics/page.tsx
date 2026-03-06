@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import useSWR from "swr";
 import {
   BarChart3,
   Calendar,
@@ -13,6 +13,7 @@ import {
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { fetcher } from "@/lib/swr";
 
 interface AnalyticsData {
   overview: {
@@ -47,25 +48,10 @@ function formatCurrency(amount: number): string {
 }
 
 export default function AdminAnalyticsPage() {
-  const [data, setData] = useState<AnalyticsData | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function fetchAnalytics() {
-      try {
-        const response = await fetch("/api/admin/analytics");
-        if (!response.ok) throw new Error("Failed to fetch analytics");
-        const result = await response.json();
-        setData(result);
-      } catch (error) {
-        console.error(error);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchAnalytics();
-  }, []);
+  const { data, isLoading } = useSWR<AnalyticsData>(
+    "/api/admin/analytics",
+    fetcher
+  );
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
@@ -78,7 +64,7 @@ export default function AdminAnalyticsPage() {
     return colors[status] || "bg-gray-500";
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex h-[50vh] items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />

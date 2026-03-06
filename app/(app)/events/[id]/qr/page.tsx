@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
+import useSWR from "swr";
 import Link from "next/link";
 import QRCode from "qrcode";
 import { ArrowLeft, Copy, Download, Loader2, Share2 } from "lucide-react";
@@ -9,6 +10,7 @@ import { ArrowLeft, Copy, Download, Loader2, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { fetcher } from "@/lib/swr";
 
 interface Event {
   id: string;
@@ -19,31 +21,17 @@ interface Event {
 
 export default function QRCodePage() {
   const params = useParams();
-  const [event, setEvent] = useState<Event | null>(null);
-  const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const cameraUrl = typeof window !== "undefined"
-    ? `${window.location.origin}/c/${event?.slug}`
-    : "";
+  const { data: event, isLoading } = useSWR<Event>(
+    `/api/events/${params.id}`,
+    fetcher
+  );
 
-  useEffect(() => {
-    async function fetchEvent() {
-      try {
-        const response = await fetch(`/api/events/${params.id}`);
-        if (!response.ok) throw new Error("Failed to fetch event");
-        const data = await response.json();
-        setEvent(data);
-      } catch (error) {
-        console.error(error);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchEvent();
-  }, [params.id]);
+  // Use NEXT_PUBLIC_APP_URL for production, fallback to window.location.origin for dev
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || (typeof window !== "undefined" ? window.location.origin : "");
+  const cameraUrl = event ? `${baseUrl}/c/${event.slug}` : "";
 
   useEffect(() => {
     if (event && canvasRef.current) {
@@ -83,7 +71,7 @@ export default function QRCodePage() {
           text: `Join ${event.name} and capture moments!`,
           url: cameraUrl,
         });
-      } catch (error) {
+      } catch {
         handleCopyLink();
       }
     } else {
@@ -91,7 +79,7 @@ export default function QRCodePage() {
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex h-64 items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />

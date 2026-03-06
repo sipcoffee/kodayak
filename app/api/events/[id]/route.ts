@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { deleteFromR2, getKeyFromUrl } from "@/lib/r2";
 import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -101,11 +102,28 @@ export async function DELETE(
       id,
       userId: session.user.id,
     },
+    include: {
+      photos: { select: { url: true } },
+    },
   });
 
   if (!event) {
     return NextResponse.json({ error: "Event not found" }, { status: 404 });
   }
+
+  // Delete photos from R2
+  await Promise.all(
+    event.photos.map(async (photo) => {
+      const key = getKeyFromUrl(photo.url);
+      if (key) {
+        try {
+          await deleteFromR2(key);
+        } catch (error) {
+          console.error(`Failed to delete photo from R2: ${key}`, error);
+        }
+      }
+    })
+  );
 
   await prisma.event.delete({ where: { id } });
 

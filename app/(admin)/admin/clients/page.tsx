@@ -1,15 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
+import useSWR from "swr";
 import {
-  Calendar,
   ChevronLeft,
   ChevronRight,
   Loader2,
   MoreHorizontal,
   Search,
-  Trash2,
   User,
 } from "lucide-react";
 
@@ -50,6 +48,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { fetcher } from "@/lib/swr";
 
 interface Client {
   id: string;
@@ -72,12 +71,14 @@ interface Pagination {
   totalPages: number;
 }
 
+interface ClientsResponse {
+  clients: Client[];
+  pagination: Pagination;
+}
+
 export default function AdminClientsPage() {
-  const router = useRouter();
-  const [clients, setClients] = useState<Client[]>([]);
-  const [pagination, setPagination] = useState<Pagination | null>(null);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
 
   // Edit dialog
@@ -89,34 +90,18 @@ export default function AdminClientsPage() {
   const [deleteClient, setDeleteClient] = useState<Client | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  const fetchClients = async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams({
-        page: page.toString(),
-        limit: "10",
-        search,
-      });
-      const response = await fetch(`/api/admin/clients?${params}`);
-      if (!response.ok) throw new Error("Failed to fetch clients");
-      const data = await response.json();
-      setClients(data.clients);
-      setPagination(data.pagination);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data, isLoading, mutate } = useSWR<ClientsResponse>(
+    `/api/admin/clients?page=${page}&limit=10&search=${searchQuery}`,
+    fetcher
+  );
 
-  useEffect(() => {
-    fetchClients();
-  }, [page, search]);
+  const clients = data?.clients ?? [];
+  const pagination = data?.pagination;
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setPage(1);
-    fetchClients();
+    setSearchQuery(search);
   };
 
   const handleEdit = (client: Client) => {
@@ -139,7 +124,7 @@ export default function AdminClientsPage() {
       });
       if (!response.ok) throw new Error("Failed to update client");
       setEditClient(null);
-      fetchClients();
+      mutate();
     } catch (error) {
       console.error(error);
     } finally {
@@ -156,7 +141,7 @@ export default function AdminClientsPage() {
       });
       if (!response.ok) throw new Error("Failed to delete client");
       setDeleteClient(null);
-      fetchClients();
+      mutate();
     } catch (error) {
       console.error(error);
     } finally {
@@ -191,7 +176,7 @@ export default function AdminClientsPage() {
           </div>
         </CardHeader>
         <CardContent>
-          {loading ? (
+          {isLoading ? (
             <div className="flex h-64 items-center justify-center">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>

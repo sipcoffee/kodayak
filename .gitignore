@@ -43,3 +43,13 @@ next-env.d.ts
 /lib/generated/prisma
 
 .claude/*
+certificates
+
+# PWA generated files
+public/sw.js
+public/workbox-*.js
+public/sw.js.map
+public/workbox-*.js.map
+
+# Local uploads (now using R2)
+public/uploads

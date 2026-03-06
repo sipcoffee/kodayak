@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useParams } from "next/navigation";
+import useSWR from "swr";
 import Link from "next/link";
 import { ArrowLeft, Loader2, Save } from "lucide-react";
 
@@ -18,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { fetcher } from "@/lib/swr";
 
 interface Event {
   id: string;
@@ -34,12 +36,14 @@ interface Event {
 
 export default function EventSettingsPage() {
   const params = useParams();
-  const router = useRouter();
-  const [event, setEvent] = useState<Event | null>(null);
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+
+  const { data: event, isLoading, mutate } = useSWR<Event>(
+    `/api/events/${params.id}`,
+    fetcher
+  );
 
   // Form state
   const [formData, setFormData] = useState({
@@ -53,32 +57,21 @@ export default function EventSettingsPage() {
     welcomeMessage: "",
   });
 
+  // Update form when event data loads
   useEffect(() => {
-    async function fetchEvent() {
-      try {
-        const response = await fetch(`/api/events/${params.id}`);
-        if (!response.ok) throw new Error("Failed to fetch event");
-        const data = await response.json();
-        setEvent(data);
-        setFormData({
-          name: data.name,
-          description: data.description || "",
-          status: data.status,
-          photoLimit: data.photoLimit.toString(),
-          expiresAt: new Date(data.expiresAt).toISOString().split("T")[0],
-          isGalleryPublic: data.isGalleryPublic,
-          primaryColor: data.primaryColor || "#E91E63",
-          welcomeMessage: data.welcomeMessage || "",
-        });
-      } catch (error) {
-        console.error(error);
-      } finally {
-        setLoading(false);
-      }
+    if (event) {
+      setFormData({
+        name: event.name,
+        description: event.description || "",
+        status: event.status,
+        photoLimit: event.photoLimit.toString(),
+        expiresAt: new Date(event.expiresAt).toISOString().split("T")[0],
+        isGalleryPublic: event.isGalleryPublic,
+        primaryColor: event.primaryColor || "#E91E63",
+        welcomeMessage: event.welcomeMessage || "",
+      });
     }
-
-    fetchEvent();
-  }, [params.id]);
+  }, [event]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -100,6 +93,9 @@ export default function EventSettingsPage() {
         throw new Error(data.error || "Failed to update event");
       }
 
+      // Revalidate event data
+      mutate();
+
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } catch (err) {
@@ -109,7 +105,7 @@ export default function EventSettingsPage() {
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex h-64 items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />

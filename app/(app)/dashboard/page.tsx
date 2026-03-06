@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import useSWR from "swr";
 import { authClient } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Camera, Calendar, HardDrive, Images, Plus } from "lucide-react";
 import Link from "next/link";
+import { fetcher } from "@/lib/swr";
 
 interface Event {
   id: string;
@@ -34,27 +35,11 @@ function formatBytes(bytes: number): string {
 
 export default function DashboardPage() {
   const { data: session, isPending } = authClient.useSession();
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function fetchStats() {
-      try {
-        const response = await fetch("/api/dashboard/stats");
-        if (!response.ok) throw new Error("Failed to fetch stats");
-        const data = await response.json();
-        setStats(data);
-      } catch (error) {
-        console.error(error);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    if (!isPending) {
-      fetchStats();
-    }
-  }, [isPending]);
+  const { data: stats, isLoading } = useSWR<DashboardStats>(
+    !isPending ? "/api/dashboard/stats" : null,
+    fetcher
+  );
 
   const getStatusColor = (status: Event["status"]) => {
     const colors = {
@@ -67,7 +52,7 @@ export default function DashboardPage() {
     return colors[status];
   };
 
-  if (isPending || loading) {
+  if (isPending || isLoading) {
     return (
       <div className="flex h-[50vh] items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />

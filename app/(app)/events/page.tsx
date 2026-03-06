@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import useSWR from "swr";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Camera, Images, Loader2, Plus } from "lucide-react";
+import { fetcher } from "@/lib/swr";
 
 interface Event {
   id: string;
@@ -22,25 +23,7 @@ interface Event {
 }
 
 export default function EventsPage() {
-  const [events, setEvents] = useState<Event[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function fetchEvents() {
-      try {
-        const response = await fetch("/api/events");
-        if (!response.ok) throw new Error("Failed to fetch events");
-        const data = await response.json();
-        setEvents(data);
-      } catch (error) {
-        console.error(error);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchEvents();
-  }, []);
+  const { data: events, isLoading } = useSWR<Event[]>("/api/events", fetcher);
 
   const getStatusColor = (status: Event["status"]) => {
     const colors = {
@@ -53,7 +36,7 @@ export default function EventsPage() {
     return colors[status];
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex h-64 items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -78,7 +61,7 @@ export default function EventsPage() {
         </Button>
       </div>
 
-      {events.length === 0 ? (
+      {!events || events.length === 0 ? (
         <Card>
           <CardContent className="py-12">
             <div className="flex flex-col items-center justify-center text-center">

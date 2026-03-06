@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
+import { useState } from "react";
+import useSWR from "swr";
 import {
   Calendar,
   ChevronLeft,
@@ -10,7 +10,6 @@ import {
   Loader2,
   MoreHorizontal,
   Search,
-  Trash2,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -57,6 +56,7 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { fetcher } from "@/lib/swr";
 
 interface Event {
   id: string;
@@ -84,8 +84,13 @@ interface Pagination {
   totalPages: number;
 }
 
+interface EventsResponse {
+  events: Event[];
+  pagination: Pagination;
+}
+
 const statusOptions = [
-  { value: "", label: "All Status" },
+  { value: "all", label: "All Status" },
   { value: "DRAFT", label: "Draft" },
   { value: "ACTIVE", label: "Active" },
   { value: "PAUSED", label: "Paused" },
@@ -94,11 +99,9 @@ const statusOptions = [
 ];
 
 export default function AdminEventsPage() {
-  const [events, setEvents] = useState<Event[]>([]);
-  const [pagination, setPagination] = useState<Pagination | null>(null);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
 
   // Edit dialog
@@ -116,35 +119,18 @@ export default function AdminEventsPage() {
   const [deleteEvent, setDeleteEvent] = useState<Event | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  const fetchEvents = async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams({
-        page: page.toString(),
-        limit: "10",
-        search,
-        status: statusFilter,
-      });
-      const response = await fetch(`/api/admin/events?${params}`);
-      if (!response.ok) throw new Error("Failed to fetch events");
-      const data = await response.json();
-      setEvents(data.events);
-      setPagination(data.pagination);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data, isLoading, mutate } = useSWR<EventsResponse>(
+    `/api/admin/events?page=${page}&limit=10&search=${searchQuery}&status=${statusFilter === "all" ? "" : statusFilter}`,
+    fetcher
+  );
 
-  useEffect(() => {
-    fetchEvents();
-  }, [page, search, statusFilter]);
+  const events = data?.events ?? [];
+  const pagination = data?.pagination;
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setPage(1);
-    fetchEvents();
+    setSearchQuery(search);
   };
 
   const handleEdit = (event: Event) => {
@@ -169,7 +155,7 @@ export default function AdminEventsPage() {
       });
       if (!response.ok) throw new Error("Failed to update event");
       setEditEvent(null);
-      fetchEvents();
+      mutate();
     } catch (error) {
       console.error(error);
     } finally {
@@ -186,7 +172,7 @@ export default function AdminEventsPage() {
       });
       if (!response.ok) throw new Error("Failed to delete event");
       setDeleteEvent(null);
-      fetchEvents();
+      mutate();
     } catch (error) {
       console.error(error);
     } finally {
@@ -219,7 +205,10 @@ export default function AdminEventsPage() {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle>All Events</CardTitle>
             <div className="flex gap-2">
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <Select value={statusFilter} onValueChange={(value) => {
+                setStatusFilter(value);
+                setPage(1);
+              }}>
                 <SelectTrigger className="w-32">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
@@ -246,7 +235,7 @@ export default function AdminEventsPage() {
           </div>
         </CardHeader>
         <CardContent>
-          {loading ? (
+          {isLoading ? (
             <div className="flex h-64 items-center justify-center">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>

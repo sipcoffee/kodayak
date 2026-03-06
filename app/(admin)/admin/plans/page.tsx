@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import useSWR from "swr";
 import { Check, CreditCard, Loader2, Save, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { fetcher } from "@/lib/swr";
 
 interface Plan {
   id: string;
@@ -35,28 +37,14 @@ function formatCurrency(amount: number): string {
 }
 
 export default function AdminPlansPage() {
-  const [plans, setPlans] = useState<Plan[]>([]);
-  const [loading, setLoading] = useState(true);
   const [editingPlan, setEditingPlan] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<Plan>>({});
   const [saving, setSaving] = useState(false);
 
-  const fetchPlans = async () => {
-    try {
-      const response = await fetch("/api/admin/plans");
-      if (!response.ok) throw new Error("Failed to fetch plans");
-      const data = await response.json();
-      setPlans(data);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchPlans();
-  }, []);
+  const { data: plans, isLoading, mutate } = useSWR<Plan[]>(
+    "/api/admin/plans",
+    fetcher
+  );
 
   const handleEdit = (plan: Plan) => {
     setEditingPlan(plan.id);
@@ -85,7 +73,7 @@ export default function AdminPlansPage() {
       if (!response.ok) throw new Error("Failed to update plan");
       setEditingPlan(null);
       setEditForm({});
-      fetchPlans();
+      mutate();
     } catch (error) {
       console.error(error);
     } finally {
@@ -101,13 +89,13 @@ export default function AdminPlansPage() {
         body: JSON.stringify({ isActive: !plan.isActive }),
       });
       if (!response.ok) throw new Error("Failed to update plan");
-      fetchPlans();
+      mutate();
     } catch (error) {
       console.error(error);
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex h-[50vh] items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -125,7 +113,7 @@ export default function AdminPlansPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        {plans.map((plan) => (
+        {plans?.map((plan) => (
           <Card
             key={plan.id}
             className={`relative ${!plan.isActive ? "opacity-60" : ""}`}
@@ -278,7 +266,7 @@ export default function AdminPlansPage() {
         ))}
       </div>
 
-      {plans.length === 0 && (
+      {(!plans || plans.length === 0) && (
         <Card>
           <CardContent className="flex h-64 flex-col items-center justify-center">
             <CreditCard className="mb-4 h-12 w-12 text-muted-foreground" />

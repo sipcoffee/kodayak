@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import useSWR from "swr";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -20,7 +21,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { fetcher } from "@/lib/swr";
 
 interface Photo {
   id: string;
@@ -51,26 +52,12 @@ interface Event {
 export default function EventDetailsPage() {
   const params = useParams();
   const router = useRouter();
-  const [event, setEvent] = useState<Event | null>(null);
-  const [loading, setLoading] = useState(true);
   const [selectedPhotos, setSelectedPhotos] = useState<Set<string>>(new Set());
 
-  useEffect(() => {
-    async function fetchEvent() {
-      try {
-        const response = await fetch(`/api/events/${params.id}`);
-        if (!response.ok) throw new Error("Failed to fetch event");
-        const data = await response.json();
-        setEvent(data);
-      } catch (error) {
-        console.error(error);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchEvent();
-  }, [params.id]);
+  const { data: event, isLoading, mutate } = useSWR<Event>(
+    `/api/events/${params.id}`,
+    fetcher
+  );
 
   const togglePhotoSelection = (photoId: string) => {
     const newSelection = new Set(selectedPhotos);
@@ -138,7 +125,7 @@ export default function EventDetailsPage() {
     return colors[status];
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex h-64 items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />

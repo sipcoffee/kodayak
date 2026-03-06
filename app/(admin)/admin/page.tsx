@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import useSWR from "swr";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Users, Calendar, Images, CreditCard, Loader2, ArrowRight } from "lucide-react";
+import { fetcher } from "@/lib/swr";
 
 interface RecentClient {
   id: string;
@@ -45,27 +46,12 @@ function formatCurrency(amount: number): string {
 }
 
 export default function AdminDashboardPage() {
-  const [stats, setStats] = useState<AdminStats | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data: stats, isLoading } = useSWR<AdminStats>(
+    "/api/admin/stats",
+    fetcher
+  );
 
-  useEffect(() => {
-    async function fetchStats() {
-      try {
-        const response = await fetch("/api/admin/stats");
-        if (!response.ok) throw new Error("Failed to fetch stats");
-        const data = await response.json();
-        setStats(data);
-      } catch (error) {
-        console.error(error);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchStats();
-  }, []);
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex h-[50vh] items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />

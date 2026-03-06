@@ -81,11 +81,11 @@
 - [x] Plan management
 
 ### Phase 5: Camera & Gallery (PWA)
-- [ ] PWA manifest and service worker
-- [ ] Camera capture interface
-- [ ] Photo upload with compression
-- [ ] Real-time gallery updates
-- [ ] Offline queue for uploads
+- [x] PWA manifest and service worker
+- [x] Camera capture interface
+- [x] Photo upload with compression
+- [x] Real-time gallery updates
+- [x] Offline queue for uploads
 
 ### Phase 6: Payment Integration
 - [ ] PayMongo checkout integration
@@ -348,11 +348,12 @@ kodayak/
 │   │       └── plans/
 │   │           └── page.tsx      # ⬜ Manage pricing plans
 │   │
-│   ├── c/                        # ⬜ Camera/capture routes (public)
+│   ├── c/                        # ✅ Camera/capture routes (public)
+│   │   ├── layout.tsx            # ✅ Camera layout
 │   │   └── [slug]/
-│   │       ├── page.tsx          # ⬜ Camera interface
+│   │       ├── page.tsx          # ✅ Camera interface
 │   │       └── gallery/
-│   │           └── page.tsx      # ⬜ Public gallery view
+│   │           └── page.tsx      # ✅ Public gallery view
 │   │
 │   ├── api/
 │   │   ├── auth/
@@ -362,10 +363,11 @@ kodayak/
 │   │   │   ├── route.ts          # ⬜ CRUD events
 │   │   │   └── [id]/
 │   │   │       └── route.ts      # ⬜
+│   │   ├── c/
+│   │   │   └── [slug]/
+│   │   │       └── route.ts      # ✅ Public event data by slug
 │   │   ├── photos/
-│   │   │   ├── route.ts          # ⬜ Upload photos
-│   │   │   └── [id]/
-│   │   │       └── route.ts      # ⬜
+│   │   │   └── route.ts          # ✅ Upload/list photos
 │   │   ├── payments/
 │   │   │   ├── route.ts          # ⬜ Create checkout
 │   │   │   └── webhook/
@@ -387,7 +389,11 @@ kodayak/
 │   │   └── separator.tsx         # ✅
 │   ├── marketing/                # ⬜ (inline in pages for now)
 │   ├── dashboard/                # ⬜ (inline in layouts for now)
-│   ├── camera/                   # ⬜ Camera components
+│   ├── camera/                   # ✅ Camera components
+│   │   ├── camera-capture.tsx    # ✅ Camera capture interface
+│   │   ├── offline-indicator.tsx # ✅ Offline status indicator
+│   │   ├── upload-progress.tsx   # ✅ Upload progress overlay
+│   │   └── index.ts              # ✅ Exports
 │   ├── forms/
 │   │   ├── login-form.tsx        # ✅
 │   │   ├── signup-form.tsx       # ✅
@@ -398,17 +404,24 @@ kodayak/
 │   ├── auth.ts                   # ✅ Better-auth server config
 │   ├── auth-client.ts            # ✅ Better-auth client
 │   ├── prisma.ts                 # ✅ Prisma client
+│   ├── image-utils.ts            # ✅ Image compression utilities
 │   ├── paymongo.ts               # ⬜ PayMongo client
 │   ├── utils.ts                  # ✅ Utility functions (cn)
 │   └── generated/prisma/         # ✅ Generated Prisma client
 │
-├── hooks/                        # ⬜ Custom hooks
+├── hooks/                        # ✅ Custom hooks
+│   ├── use-camera.ts             # ✅ Camera access hook
+│   └── use-service-worker.ts     # ✅ Service worker hook
 │
 ├── prisma/
 │   ├── schema.prisma             # ✅ Database schema
 │   └── seed.ts                   # ✅ Seed data (plans)
 │
-├── public/                       # ⬜ PWA assets
+├── public/                       # ✅ PWA assets
+│   ├── manifest.json             # ✅ PWA manifest
+│   ├── sw.js                     # ✅ Service worker
+│   ├── icons/                    # ✅ App icons (need actual icons)
+│   └── screenshots/              # ✅ PWA screenshots
 │
 ├── prisma.config.ts              # ✅ Prisma config
 ├── proxy.ts                      # ✅ Route protection
@@ -710,13 +723,13 @@ PAYMONGO_WEBHOOK_SECRET=whsk_xxx
 - [x] Analytics dashboard
 - [x] Plan management
 
-### Phase 6: Camera & PWA (Week 3-4)
-- [ ] PWA manifest and icons
-- [ ] Service worker setup
-- [ ] Camera capture component
-- [ ] Photo upload with compression
-- [ ] Offline queue system
-- [ ] Gallery real-time updates
+### Phase 6: Camera & PWA (Week 3-4) ✅ COMPLETED
+- [x] PWA manifest and icons
+- [x] Service worker setup
+- [x] Camera capture component
+- [x] Photo upload with compression
+- [x] Offline queue system
+- [x] Gallery real-time updates
 
 ### Phase 7: Payment Integration (Week 4)
 - [ ] PayMongo account setup

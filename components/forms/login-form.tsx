@@ -50,7 +50,7 @@ export default function LoginForm() {
   const handleGoogleSignIn = async () => {
     await authClient.signIn.social({
       provider: "google",
-      callbackURL: "/dashboard",
+      callbackURL: "/auth/callback",
     });
   };
 
@@ -58,15 +58,23 @@ export default function LoginForm() {
     setLoading(true);
     setError(null);
 
-    const { error } = await authClient.signIn.email({
+    const { data, error } = await authClient.signIn.email({
       email: values.email,
       password: values.password,
-      callbackURL: "/dashboard",
     });
 
     if (error) {
       setError(error.message || "Failed to sign in");
       setLoading(false);
+      return;
+    }
+
+    // Redirect based on user role
+    const role = (data?.user as { role?: string })?.role;
+    if (role === "ADMIN") {
+      window.location.href = "/admin";
+    } else {
+      window.location.href = "/dashboard";
     }
   }
 
