@@ -50,10 +50,20 @@ export default function SignupForm() {
   });
 
   const handleGoogleSignIn = async () => {
-    await authClient.signIn.social({
+    const { data, error } = await authClient.signIn.social({
       provider: "google",
       callbackURL: "/auth/callback",
     });
+
+    if (error) {
+      setError(error.message || "Failed to sign in with Google");
+      return;
+    }
+
+    // If better-auth returns a redirect URL, navigate to it
+    if (data?.url) {
+      window.location.href = data.url;
+    }
   };
 
   async function onSubmit(values: SignupValues) {
