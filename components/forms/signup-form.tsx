@@ -60,16 +60,24 @@ export default function SignupForm() {
     setLoading(true);
     setError(null);
 
-    const { error } = await authClient.signUp.email({
+    const { data, error } = await authClient.signUp.email({
       email: values.email,
       password: values.password,
       name: values.name,
-      callbackURL: "/dashboard",
     });
 
     if (error) {
       setError(error.message || "Failed to create account");
       setLoading(false);
+      return;
+    }
+
+    // Redirect based on user role
+    const role = (data?.user as { role?: string })?.role;
+    if (role === "ADMIN") {
+      window.location.href = "/admin";
+    } else {
+      window.location.href = "/dashboard";
     }
   }
 
