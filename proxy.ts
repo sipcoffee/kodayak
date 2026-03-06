@@ -5,6 +5,7 @@ export async function proxy(request: NextRequest) {
 
   const sessionCookie =
     request.cookies.get("better-auth.session_token") ||
+    request.cookies.get("__Secure-better-auth.session_token") ||
     request.cookies.get("__session");
 
   // Auth routes - redirect to dashboard if logged in
