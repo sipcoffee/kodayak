@@ -71,6 +71,7 @@ export default function LoginForm() {
     const { data, error } = await authClient.signIn.email({
       email: values.email,
       password: values.password,
+      callbackURL: "/admin",
     });
 
     if (error) {
