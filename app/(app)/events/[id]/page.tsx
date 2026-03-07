@@ -292,14 +292,15 @@ export default function EventDetailsPage() {
 
       {/* Gallery */}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <CardTitle>Gallery</CardTitle>
           {event.photos.length > 0 && (
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {selectedPhotos.size > 0 ? (
                 <>
                   <Button variant="outline" size="sm" onClick={deselectAllPhotos}>
-                    Deselect All
+                    <span className="hidden sm:inline">Deselect All</span>
+                    <span className="sm:hidden">Deselect</span>
                   </Button>
                   <Button
                     variant="destructive"
@@ -308,15 +309,17 @@ export default function EventDetailsPage() {
                     disabled={isDeleting}
                   >
                     {isDeleting ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <Loader2 className="h-4 w-4 animate-spin sm:mr-2" />
                     ) : (
-                      <Trash2 className="mr-2 h-4 w-4" />
+                      <Trash2 className="h-4 w-4 sm:mr-2" />
                     )}
-                    Delete ({selectedPhotos.size})
+                    <span className="hidden sm:inline">Delete</span>
+                    <span className="ml-1">({selectedPhotos.size})</span>
                   </Button>
                   <Button size="sm" onClick={handleBulkDownload}>
-                    <Download className="mr-2 h-4 w-4" />
-                    Download ({selectedPhotos.size})
+                    <Download className="h-4 w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Download</span>
+                    <span className="ml-1">({selectedPhotos.size})</span>
                   </Button>
                   {selectedPhotos.size >= MIN_PHOTOS && (
                     <Button
@@ -324,8 +327,9 @@ export default function EventDetailsPage() {
                       variant="outline"
                       onClick={() => setIsGifModalOpen(true)}
                     >
-                      <Wand2 className="mr-2 h-4 w-4" />
-                      Create GIF
+                      <Wand2 className="h-4 w-4 sm:mr-2" />
+                      <span className="hidden sm:inline">Create GIF</span>
+                      <span className="sm:hidden">GIF</span>
                     </Button>
                   )}
                 </>

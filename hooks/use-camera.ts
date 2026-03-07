@@ -8,12 +8,21 @@ interface UseCameraOptions {
   initialFacing?: CameraFacing;
 }
 
+interface ZoomCapabilities {
+  supported: boolean;
+  min: number;
+  max: number;
+  step: number;
+}
+
 interface CameraState {
   isReady: boolean;
   isCapturing: boolean;
   error: string | null;
   facing: CameraFacing;
   hasMultipleCameras: boolean;
+  zoomLevel: number;
+  zoomCapabilities: ZoomCapabilities;
 }
 
 export function useCamera(options: UseCameraOptions = {}) {
@@ -29,6 +38,8 @@ export function useCamera(options: UseCameraOptions = {}) {
     error: null,
     facing: initialFacing,
     hasMultipleCameras: false,
+    zoomLevel: 1,
+    zoomCapabilities: { supported: false, min: 1, max: 1, step: 0.1 },
   });
 
   const stopStream = useCallback(() => {
@@ -69,6 +80,25 @@ export function useCamera(options: UseCameraOptions = {}) {
       const videoDevices = devices.filter((d) => d.kind === "videoinput");
       const hasMultipleCameras = videoDevices.length > 1;
 
+      // Check for zoom capabilities
+      const videoTrack = stream.getVideoTracks()[0];
+      let zoomCapabilities: ZoomCapabilities = { supported: false, min: 1, max: 1, step: 0.1 };
+
+      if (videoTrack) {
+        const capabilities = videoTrack.getCapabilities() as MediaTrackCapabilities & {
+          zoom?: { min: number; max: number; step: number };
+        };
+
+        if (capabilities.zoom) {
+          zoomCapabilities = {
+            supported: true,
+            min: capabilities.zoom.min,
+            max: capabilities.zoom.max,
+            step: capabilities.zoom.step,
+          };
+        }
+      }
+
       // Attach to video element
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
@@ -80,6 +110,8 @@ export function useCamera(options: UseCameraOptions = {}) {
         isReady: true,
         facing: targetFacing,
         hasMultipleCameras,
+        zoomLevel: 1,
+        zoomCapabilities,
         error: null,
       }));
     } catch (error) {
@@ -97,7 +129,32 @@ export function useCamera(options: UseCameraOptions = {}) {
     await startCamera(newFacing);
   }, [startCamera]);
 
-  const capturePhoto = useCallback(async (): Promise<Blob | null> => {
+  const setZoom = useCallback(async (level: number) => {
+    if (!streamRef.current) return;
+
+    const videoTrack = streamRef.current.getVideoTracks()[0];
+    if (!videoTrack) return;
+
+    const capabilities = videoTrack.getCapabilities() as MediaTrackCapabilities & {
+      zoom?: { min: number; max: number; step: number };
+    };
+
+    if (!capabilities.zoom) return;
+
+    // Clamp zoom level to valid range
+    const clampedLevel = Math.min(Math.max(level, capabilities.zoom.min), capabilities.zoom.max);
+
+    try {
+      await videoTrack.applyConstraints({
+        advanced: [{ zoom: clampedLevel } as MediaTrackConstraintSet],
+      });
+      setState((prev) => ({ ...prev, zoomLevel: clampedLevel }));
+    } catch (error) {
+      console.error("Failed to set zoom level:", error);
+    }
+  }, []);
+
+  const capturePhoto = useCallback(async (filter?: string): Promise<Blob | null> => {
     if (!videoRef.current || !canvasRef.current) {
       return null;
     }
@@ -117,8 +174,16 @@ export function useCamera(options: UseCameraOptions = {}) {
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
 
+      // Apply filter if provided
+      if (filter) {
+        ctx.filter = filter;
+      }
+
       // Draw the current video frame
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      // Reset filter
+      ctx.filter = "none";
 
       // Convert to blob
       const blob = await new Promise<Blob | null>((resolve) => {
@@ -156,5 +221,6 @@ export function useCamera(options: UseCameraOptions = {}) {
     switchCamera,
     capturePhoto,
     stopStream,
+    setZoom,
   };
 }
