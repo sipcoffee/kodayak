@@ -15,6 +15,14 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   allowedDevOrigins: ["192.168.254.100"],
   turbopack: {},
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "pub-21e76b8ae82c4e5a83e46c6cbedf81b7.r2.dev",
+      },
+    ],
+  },
   // Enable PWA headers
   async headers() {
     return [
