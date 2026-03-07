@@ -14,11 +14,12 @@ export default function MarketingLayout({
         <div className="mx-3 md:mx-16 flex h-16 items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
             <Image
-              src="/logo_square.png"
+              src="/hires-logo.png"
               alt="Kodayak Logo"
-              width={36}
-              height={36}
+              width={48}
+              height={48}
               className="rounded-lg"
+              style={{ width: "auto", height: "auto" }}
             />
             <span className="text-xl font-bold">Kodayak</span>
           </Link>
@@ -71,11 +72,12 @@ export default function MarketingLayout({
             <div>
               <div className="flex items-center gap-2 mb-4">
                 <Image
-                  src="/logo_square.png"
+                  src="/hires-logo.png"
                   alt="Kodayak Logo"
                   width={32}
                   height={32}
                   className="rounded-lg"
+                  style={{ width: "auto", height: "auto" }}
                 />
                 <span className="text-lg font-bold">Kodayak</span>
               </div>

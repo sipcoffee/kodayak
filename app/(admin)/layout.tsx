@@ -64,11 +64,12 @@ export default function AdminLayout({
           {/* Logo */}
           <div className="flex h-16 items-center gap-2 border-b px-6">
             <Image
-              src="/logo_square.png"
+              src="/hires-logo.png"
               alt="Kodayak Logo"
               width={32}
               height={32}
               className="rounded-lg"
+              style={{ width: "auto", height: "auto" }}
             />
             <span className="text-lg font-bold">Kodayak</span>
             <span className="ml-1 rounded bg-primary/10 px-1.5 py-0.5 text-xs font-medium text-primary">

@@ -58,11 +58,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           {/* Logo */}
           <div className="flex h-16 items-center gap-2 border-b px-6">
             <Image
-              src="/logo_square.png"
+              src="/hires-logo.png"
               alt="Kodayak Logo"
               width={32}
               height={32}
               className="rounded-lg"
+              style={{ width: "auto", height: "auto" }}
             />
             <span className="text-lg font-bold">Kodayak</span>
             <button
