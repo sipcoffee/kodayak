@@ -10,8 +10,8 @@ export default function MarketingLayout({
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-16 items-center justify-between">
+      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
+        <div className="mx-3 md:mx-16 flex h-16 items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
             <Image
               src="/logo_square.png"
@@ -65,7 +65,7 @@ export default function MarketingLayout({
       <main className="flex-1">{children}</main>
 
       {/* Footer */}
-      <footer className="border-t bg-muted/50">
+      <footer className="px-6 md:px-16 border-t bg-muted/50">
         <div className="container py-12">
           <div className="grid gap-8 md:grid-cols-4">
             <div>
@@ -139,7 +139,9 @@ export default function MarketingLayout({
           </div>
 
           <div className="mt-8 pt-8 border-t text-center text-sm text-muted-foreground">
-            <p>&copy; {new Date().getFullYear()} Kodayak. All rights reserved.</p>
+            <p>
+              &copy; {new Date().getFullYear()} Kodayak. All rights reserved.
+            </p>
           </div>
         </div>
       </footer>

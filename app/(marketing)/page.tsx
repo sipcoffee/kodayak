@@ -17,12 +17,11 @@ export default function LandingPage() {
   return (
     <div>
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-pink-50 via-white to-pink-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      <section className="px-6 md:px-16 relative overflow-hidden bg-linear-to-br from-pink-50 via-white to-pink-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
         <div className="container py-24 md:py-32">
           <div className="mx-auto max-w-3xl text-center">
             <h1 className="mb-6 text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl">
-              Every Angle.{" "}
-              <span className="text-primary">Every Moment.</span>
+              Every Angle. <span className="text-primary">Every Moment.</span>
               <br />
               One Gallery.
             </h1>
@@ -44,7 +43,7 @@ export default function LandingPage() {
       </section>
 
       {/* How It Works */}
-      <section id="how-it-works" className="py-24 bg-muted/50">
+      <section id="how-it-works" className="px-6 md:px-16 py-24 bg-muted/50">
         <div className="container">
           <div className="mx-auto max-w-2xl text-center mb-16">
             <h2 className="text-3xl font-bold mb-4">How It Works</h2>
@@ -58,7 +57,8 @@ export default function LandingPage() {
               {
                 step: "1",
                 title: "Create Event",
-                description: "Set up your event with custom settings and branding",
+                description:
+                  "Set up your event with custom settings and branding",
                 icon: Camera,
               },
               {
@@ -95,7 +95,7 @@ export default function LandingPage() {
       </section>
 
       {/* Features */}
-      <section id="features" className="py-24">
+      <section id="features" className="px-6 md:px-16 py-24">
         <div className="container">
           <div className="mx-auto max-w-2xl text-center mb-16">
             <h2 className="text-3xl font-bold mb-4">
@@ -162,7 +162,7 @@ export default function LandingPage() {
       </section>
 
       {/* Use Cases */}
-      <section className="py-24 bg-muted/50">
+      <section className="px-6 md:px-16 py-24 bg-muted/50">
         <div className="container">
           <div className="mx-auto max-w-2xl text-center mb-16">
             <h2 className="text-3xl font-bold mb-4">Perfect For Any Event</h2>
@@ -172,22 +172,25 @@ export default function LandingPage() {
           </div>
 
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {["Weddings", "Corporate Events", "Birthday Parties", "Reunions"].map(
-              (useCase) => (
-                <Card key={useCase} className="text-center">
-                  <CardContent className="py-8">
-                    <CheckCircle className="mx-auto mb-3 h-8 w-8 text-primary" />
-                    <p className="font-medium">{useCase}</p>
-                  </CardContent>
-                </Card>
-              )
-            )}
+            {[
+              "Weddings",
+              "Corporate Events",
+              "Birthday Parties",
+              "Reunions",
+            ].map((useCase) => (
+              <Card key={useCase} className="text-center">
+                <CardContent className="py-8">
+                  <CheckCircle className="mx-auto mb-3 h-8 w-8 text-primary" />
+                  <p className="font-medium">{useCase}</p>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </div>
       </section>
 
       {/* CTA */}
-      <section className="py-24">
+      <section className="px-6 md:px-16 py-24">
         <div className="container">
           <div className="mx-auto max-w-2xl text-center">
             <h2 className="text-3xl font-bold mb-4">
