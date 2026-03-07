@@ -16,6 +16,7 @@ import {
   QrCode,
   Settings,
   Trash2,
+  Wand2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -23,6 +24,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { fetcher } from "@/lib/swr";
+import { GifGeneratorModal } from "@/components/gif-generator/gif-generator-modal";
+import { MIN_PHOTOS } from "@/lib/gif-generator/types";
 
 interface Photo {
   id: string;
@@ -55,6 +58,7 @@ export default function EventDetailsPage() {
   const router = useRouter();
   const [selectedPhotos, setSelectedPhotos] = useState<Set<string>>(new Set());
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isGifModalOpen, setIsGifModalOpen] = useState(false);
 
   const { data: event, isLoading, mutate } = useSWR<Event>(
     `/api/events/${params.id}`,
@@ -314,6 +318,16 @@ export default function EventDetailsPage() {
                     <Download className="mr-2 h-4 w-4" />
                     Download ({selectedPhotos.size})
                   </Button>
+                  {selectedPhotos.size >= MIN_PHOTOS && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setIsGifModalOpen(true)}
+                    >
+                      <Wand2 className="mr-2 h-4 w-4" />
+                      Create GIF
+                    </Button>
+                  )}
                 </>
               ) : (
                 <Button variant="outline" size="sm" onClick={selectAllPhotos}>
@@ -414,6 +428,20 @@ export default function EventDetailsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* GIF Generator Modal */}
+      <GifGeneratorModal
+        open={isGifModalOpen}
+        onOpenChange={setIsGifModalOpen}
+        photos={event.photos
+          .filter((p) => selectedPhotos.has(p.id))
+          .map((p) => ({
+            id: p.id,
+            url: p.url,
+            thumbnailUrl: p.thumbnailUrl,
+          }))}
+        eventSlug={event.slug}
+      />
     </div>
   );
 }
