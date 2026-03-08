@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Camera, SwitchCamera, X, Check, RefreshCw, ZoomIn, ZoomOut } from "lucide-react";
+import { useEffect, useState, useRef } from "react";
+import { Camera, SwitchCamera, X, Check, RefreshCw, ImageIcon } from "lucide-react";
 import { useCamera } from "@/hooks/use-camera";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -128,7 +128,9 @@ export function CameraCapture({
   }, [startCamera]);
 
   const handleCapture = async () => {
-    const blob = await capturePhoto(selectedFilter.filter);
+    // If using CSS zoom (not native), we need to crop the center portion
+    const useCssZoom = !zoomCapabilities.nativeSupport && zoomLevel > 1;
+    const blob = await capturePhoto(selectedFilter.filter, useCssZoom ? zoomLevel : undefined);
     if (blob) {
       setCapturedBlob(blob);
       setPreview(URL.createObjectURL(blob));
@@ -227,145 +229,229 @@ export function CameraCapture({
     );
   }
 
+  // Zoom slider state and refs
+  const zoomSliderRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const handleZoomDrag = (clientX: number) => {
+    if (!zoomSliderRef.current || !zoomCapabilities.supported) return;
+
+    const rect = zoomSliderRef.current.getBoundingClientRect();
+    const percentage = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    const newZoom = zoomCapabilities.min + percentage * (zoomCapabilities.max - zoomCapabilities.min);
+    setZoom(newZoom);
+  };
+
+  const handleZoomTouchStart = (e: React.TouchEvent) => {
+    setIsDragging(true);
+    handleZoomDrag(e.touches[0].clientX);
+  };
+
+  const handleZoomTouchMove = (e: React.TouchEvent) => {
+    if (isDragging) {
+      handleZoomDrag(e.touches[0].clientX);
+    }
+  };
+
+  const handleZoomTouchEnd = () => {
+    setIsDragging(false);
+  };
+
+  const handleZoomMouseDown = (e: React.MouseEvent) => {
+    setIsDragging(true);
+    handleZoomDrag(e.clientX);
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (isDragging) {
+        handleZoomDrag(e.clientX);
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    if (isDragging) {
+      document.addEventListener("mousemove", handleMouseMove);
+      document.addEventListener("mouseup", handleMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isDragging]);
+
   // Camera mode
   return (
-    <div className="relative h-full w-full bg-black">
-      {/* Video feed */}
-      <video
-        ref={videoRef}
-        autoPlay
-        playsInline
-        muted
-        style={{ filter: selectedFilter.filter }}
-        className={cn(
-          "h-full w-full object-cover",
-          !isReady && "opacity-0"
-        )}
-      />
-
-      {/* Hidden canvas for capture */}
-      <canvas ref={canvasRef} className="hidden" />
-
-      {/* Loading state */}
-      {!isReady && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-white/30 border-t-white" />
-        </div>
-      )}
-
-      {/* Zoom controls - only shown when device supports zoom */}
-      {zoomCapabilities.supported && isReady && (
-        <div className="absolute right-4 top-1/2 flex -translate-y-1/2 flex-col items-center gap-2">
-          <Button
-            onClick={() => setZoom(zoomLevel + zoomCapabilities.step)}
-            variant="outline"
-            size="icon"
-            className="h-10 w-10 rounded-full border-2 border-white/70 bg-black/30 text-white hover:bg-white/20"
-            disabled={zoomLevel >= zoomCapabilities.max || disabled}
-          >
-            <ZoomIn className="h-5 w-5" />
-          </Button>
-
-          <div className="rounded-full bg-black/50 px-2 py-1 text-xs font-medium text-white">
-            {zoomLevel.toFixed(1)}x
-          </div>
-
-          <Button
-            onClick={() => setZoom(zoomLevel - zoomCapabilities.step)}
-            variant="outline"
-            size="icon"
-            className="h-10 w-10 rounded-full border-2 border-white/70 bg-black/30 text-white hover:bg-white/20"
-            disabled={zoomLevel <= zoomCapabilities.min || disabled}
-          >
-            <ZoomOut className="h-5 w-5" />
-          </Button>
-        </div>
-      )}
-
-      {/* Filter selector */}
-      {isReady && (
-        <div className="absolute bottom-32 left-0 right-0 px-2">
-          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-            {FILTER_PRESETS.map((filter) => (
-              <button
-                key={filter.id}
-                onClick={() => setSelectedFilter(filter)}
-                className={cn(
-                  "flex flex-col items-center gap-1 flex-shrink-0 transition-transform",
-                  selectedFilter.id === filter.id && "scale-105"
-                )}
-                disabled={disabled}
-              >
-                <div
-                  className={cn(
-                    "h-14 w-14 rounded-lg border-2 transition-all",
-                    selectedFilter.id === filter.id
-                      ? "border-white shadow-lg"
-                      : "border-transparent opacity-70"
-                  )}
-                  style={{
-                    backgroundColor: filter.preview,
-                    filter: filter.filter,
-                  }}
-                />
-                <span
-                  className={cn(
-                    "text-[10px] text-white transition-opacity",
-                    selectedFilter.id === filter.id ? "opacity-100" : "opacity-60"
-                  )}
-                >
-                  {filter.name}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Controls */}
-      <div className="absolute bottom-0 left-0 right-0 flex items-center justify-center gap-8 bg-gradient-to-t from-black/80 to-transparent p-8">
-        {/* Switch camera button */}
-        {hasMultipleCameras && (
-          <Button
-            onClick={switchCamera}
-            variant="outline"
-            size="lg"
-            className="h-14 w-14 rounded-full border-2 border-white bg-transparent text-white hover:bg-white/10"
-            disabled={!isReady || isCapturing || disabled}
-          >
-            <SwitchCamera className="h-6 w-6" />
-          </Button>
-        )}
-
-        {/* Capture button */}
-        <Button
-          onClick={handleCapture}
-          size="lg"
+    <div className="relative h-[100dvh] w-full bg-black overflow-hidden flex flex-col">
+      {/* Video feed container - takes remaining space */}
+      <div className="relative flex-1 min-h-0 overflow-hidden">
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          style={{
+            filter: selectedFilter.filter,
+            // Apply CSS transform zoom when native zoom is not supported
+            ...(!zoomCapabilities.nativeSupport && zoomLevel > 1 ? {
+              transform: `scale(${zoomLevel})`,
+              transformOrigin: 'center center',
+            } : {}),
+          }}
           className={cn(
-            "h-20 w-20 rounded-full border-4 border-white transition-transform",
-            isCapturing && "scale-95"
+            "h-full w-full object-cover transition-transform duration-100",
+            !isReady && "opacity-0"
           )}
-          style={{ backgroundColor: primaryColor }}
-          disabled={!isReady || isCapturing || disabled}
-        >
-          <Camera className="h-8 w-8" />
-        </Button>
+        />
 
-        {/* Spacer for alignment when switch button is shown */}
-        {hasMultipleCameras && <div className="h-14 w-14" />}
+        {/* Hidden canvas for capture */}
+        <canvas ref={canvasRef} className="hidden" />
+
+        {/* Loading state */}
+        {!isReady && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-white/30 border-t-white" />
+          </div>
+        )}
+
+        {/* Close button */}
+        {onCancel && (
+          <Button
+            onClick={onCancel}
+            variant="ghost"
+            size="icon"
+            className="absolute right-4 top-4 text-white hover:bg-white/10"
+          >
+            <X className="h-6 w-6" />
+          </Button>
+        )}
       </div>
 
-      {/* Close button */}
-      {onCancel && (
-        <Button
-          onClick={onCancel}
-          variant="ghost"
-          size="icon"
-          className="absolute right-4 top-4 text-white hover:bg-white/10"
-        >
-          <X className="h-6 w-6" />
-        </Button>
-      )}
+      {/* Bottom controls section - fixed height */}
+      <div className="flex-shrink-0 bg-black">
+        {/* Zoom slider - draggable */}
+        {zoomCapabilities.supported && isReady && (
+          <div className="px-6 py-3">
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-white/70 w-8">{zoomCapabilities.min.toFixed(1)}x</span>
+              <div
+                ref={zoomSliderRef}
+                className="relative flex-1 h-8 flex items-center cursor-pointer touch-none"
+                onMouseDown={handleZoomMouseDown}
+                onTouchStart={handleZoomTouchStart}
+                onTouchMove={handleZoomTouchMove}
+                onTouchEnd={handleZoomTouchEnd}
+              >
+                {/* Track background */}
+                <div className="absolute inset-x-0 h-1 bg-white/30 rounded-full" />
+                {/* Track fill */}
+                <div
+                  className="absolute left-0 h-1 bg-white rounded-full"
+                  style={{
+                    width: `${((zoomLevel - zoomCapabilities.min) / (zoomCapabilities.max - zoomCapabilities.min)) * 100}%`,
+                  }}
+                />
+                {/* Thumb */}
+                <div
+                  className={cn(
+                    "absolute h-6 w-6 bg-white rounded-full shadow-lg -translate-x-1/2 transition-transform",
+                    isDragging && "scale-110"
+                  )}
+                  style={{
+                    left: `${((zoomLevel - zoomCapabilities.min) / (zoomCapabilities.max - zoomCapabilities.min)) * 100}%`,
+                  }}
+                >
+                  <span className="absolute inset-0 flex items-center justify-center text-[8px] font-bold text-black">
+                    {zoomLevel.toFixed(1)}
+                  </span>
+                </div>
+              </div>
+              <span className="text-xs text-white/70 w-8 text-right">{zoomCapabilities.max.toFixed(1)}x</span>
+            </div>
+          </div>
+        )}
+
+        {/* Filter selector */}
+        {isReady && (
+          <div className="px-2 pb-2">
+            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+              {FILTER_PRESETS.map((filter) => (
+                <button
+                  key={filter.id}
+                  onClick={() => setSelectedFilter(filter)}
+                  className={cn(
+                    "flex flex-col items-center gap-1 flex-shrink-0 transition-transform",
+                    selectedFilter.id === filter.id && "scale-105"
+                  )}
+                  disabled={disabled}
+                >
+                  <div
+                    className={cn(
+                      "h-12 w-12 rounded-lg border-2 transition-all",
+                      selectedFilter.id === filter.id
+                        ? "border-white shadow-lg"
+                        : "border-transparent opacity-70"
+                    )}
+                    style={{
+                      backgroundColor: filter.preview,
+                      filter: filter.filter,
+                    }}
+                  />
+                  <span
+                    className={cn(
+                      "text-[10px] text-white transition-opacity",
+                      selectedFilter.id === filter.id ? "opacity-100" : "opacity-60"
+                    )}
+                  >
+                    {filter.name}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Controls */}
+        <div className="flex items-center justify-center gap-8 px-8 pb-6 pt-2">
+          {/* Gallery placeholder (left side) */}
+          <div className="h-14 w-14 rounded-full border-2 border-white/30 bg-white/10 flex items-center justify-center">
+            <ImageIcon className="h-6 w-6 text-white/50" />
+          </div>
+
+          {/* Capture button */}
+          <Button
+            onClick={handleCapture}
+            size="lg"
+            className={cn(
+              "h-20 w-20 rounded-full border-4 border-white transition-transform",
+              isCapturing && "scale-95"
+            )}
+            style={{ backgroundColor: primaryColor }}
+            disabled={!isReady || isCapturing || disabled}
+          >
+            <Camera className="h-8 w-8" />
+          </Button>
+
+          {/* Switch camera button (right side) */}
+          {hasMultipleCameras ? (
+            <Button
+              onClick={switchCamera}
+              variant="outline"
+              size="lg"
+              className="h-14 w-14 rounded-full border-2 border-white bg-transparent text-white hover:bg-white/10"
+              disabled={!isReady || isCapturing || disabled}
+            >
+              <SwitchCamera className="h-6 w-6" />
+            </Button>
+          ) : (
+            <div className="h-14 w-14" />
+          )}
+        </div>
+      </div>
     </div>
   );
 }

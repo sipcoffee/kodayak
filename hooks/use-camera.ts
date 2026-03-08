@@ -10,6 +10,7 @@ interface UseCameraOptions {
 
 interface ZoomCapabilities {
   supported: boolean;
+  nativeSupport: boolean; // true if device supports native zoom API
   min: number;
   max: number;
   step: number;
@@ -39,7 +40,7 @@ export function useCamera(options: UseCameraOptions = {}) {
     facing: initialFacing,
     hasMultipleCameras: false,
     zoomLevel: 1,
-    zoomCapabilities: { supported: false, min: 1, max: 1, step: 0.1 },
+    zoomCapabilities: { supported: false, nativeSupport: false, min: 1, max: 1, step: 0.1 },
   });
 
   const stopStream = useCallback(() => {
@@ -82,7 +83,13 @@ export function useCamera(options: UseCameraOptions = {}) {
 
       // Check for zoom capabilities
       const videoTrack = stream.getVideoTracks()[0];
-      let zoomCapabilities: ZoomCapabilities = { supported: false, min: 1, max: 1, step: 0.1 };
+      let zoomCapabilities: ZoomCapabilities = {
+        supported: true, // Always enable zoom with CSS fallback
+        nativeSupport: false,
+        min: 1,
+        max: 5, // CSS fallback max zoom
+        step: 0.1
+      };
 
       if (videoTrack) {
         const capabilities = videoTrack.getCapabilities() as MediaTrackCapabilities & {
@@ -90,8 +97,10 @@ export function useCamera(options: UseCameraOptions = {}) {
         };
 
         if (capabilities.zoom) {
+          // Native zoom supported (Android Chrome, etc.)
           zoomCapabilities = {
             supported: true,
+            nativeSupport: true,
             min: capabilities.zoom.min,
             max: capabilities.zoom.max,
             step: capabilities.zoom.step,
@@ -130,31 +139,29 @@ export function useCamera(options: UseCameraOptions = {}) {
   }, [startCamera]);
 
   const setZoom = useCallback(async (level: number) => {
-    if (!streamRef.current) return;
+    setState((prev) => {
+      const { zoomCapabilities } = prev;
+      // Clamp zoom level to valid range
+      const clampedLevel = Math.min(Math.max(level, zoomCapabilities.min), zoomCapabilities.max);
 
-    const videoTrack = streamRef.current.getVideoTracks()[0];
-    if (!videoTrack) return;
+      // Try native zoom if supported
+      if (zoomCapabilities.nativeSupport && streamRef.current) {
+        const videoTrack = streamRef.current.getVideoTracks()[0];
+        if (videoTrack) {
+          videoTrack.applyConstraints({
+            advanced: [{ zoom: clampedLevel } as MediaTrackConstraintSet],
+          }).catch((error) => {
+            console.error("Failed to set native zoom level:", error);
+          });
+        }
+      }
+      // CSS zoom fallback is handled by the component via zoomLevel state
 
-    const capabilities = videoTrack.getCapabilities() as MediaTrackCapabilities & {
-      zoom?: { min: number; max: number; step: number };
-    };
-
-    if (!capabilities.zoom) return;
-
-    // Clamp zoom level to valid range
-    const clampedLevel = Math.min(Math.max(level, capabilities.zoom.min), capabilities.zoom.max);
-
-    try {
-      await videoTrack.applyConstraints({
-        advanced: [{ zoom: clampedLevel } as MediaTrackConstraintSet],
-      });
-      setState((prev) => ({ ...prev, zoomLevel: clampedLevel }));
-    } catch (error) {
-      console.error("Failed to set zoom level:", error);
-    }
+      return { ...prev, zoomLevel: clampedLevel };
+    });
   }, []);
 
-  const capturePhoto = useCallback(async (filter?: string): Promise<Blob | null> => {
+  const capturePhoto = useCallback(async (filter?: string, cssZoomLevel?: number): Promise<Blob | null> => {
     if (!videoRef.current || !canvasRef.current) {
       return null;
     }
@@ -170,17 +177,45 @@ export function useCamera(options: UseCameraOptions = {}) {
         throw new Error("Failed to get canvas context");
       }
 
-      // Set canvas dimensions to match video
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
+      const videoWidth = video.videoWidth;
+      const videoHeight = video.videoHeight;
 
-      // Apply filter if provided
-      if (filter) {
-        ctx.filter = filter;
+      // If CSS zoom is being used, we need to crop the center portion
+      if (cssZoomLevel && cssZoomLevel > 1) {
+        // Calculate the cropped dimensions
+        const cropWidth = videoWidth / cssZoomLevel;
+        const cropHeight = videoHeight / cssZoomLevel;
+        const cropX = (videoWidth - cropWidth) / 2;
+        const cropY = (videoHeight - cropHeight) / 2;
+
+        // Set canvas to cropped size (but scaled back up to original for quality)
+        canvas.width = videoWidth;
+        canvas.height = videoHeight;
+
+        // Apply filter if provided
+        if (filter) {
+          ctx.filter = filter;
+        }
+
+        // Draw cropped and scaled portion
+        ctx.drawImage(
+          video,
+          cropX, cropY, cropWidth, cropHeight, // Source (cropped center)
+          0, 0, videoWidth, videoHeight // Destination (full canvas)
+        );
+      } else {
+        // Set canvas dimensions to match video
+        canvas.width = videoWidth;
+        canvas.height = videoHeight;
+
+        // Apply filter if provided
+        if (filter) {
+          ctx.filter = filter;
+        }
+
+        // Draw the current video frame
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
       }
-
-      // Draw the current video frame
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
       // Reset filter
       ctx.filter = "none";
