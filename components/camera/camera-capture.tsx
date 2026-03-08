@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { Camera, SwitchCamera, X, Check, RefreshCw, ImageIcon } from "lucide-react";
+import { Camera, SwitchCamera, X, Check, RefreshCw } from "lucide-react";
 import { useCamera } from "@/hooks/use-camera";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -113,15 +113,19 @@ export function CameraCapture({
     hasMultipleCameras,
     zoomLevel,
     zoomCapabilities,
+    focusCapabilities,
     startCamera,
     switchCamera,
     capturePhoto,
     setZoom,
+    focusAt,
   } = useCamera();
 
   const [preview, setPreview] = useState<string | null>(null);
   const [capturedBlob, setCapturedBlob] = useState<Blob | null>(null);
   const [selectedFilter, setSelectedFilter] = useState<FilterPreset>(FILTER_PRESETS[0]);
+  const [focusPoint, setFocusPoint] = useState<{ x: number; y: number } | null>(null);
+  const videoContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     startCamera();
@@ -158,6 +162,41 @@ export function CameraCapture({
     }
     setPreview(null);
     setCapturedBlob(null);
+  };
+
+  // Handle tap to focus
+  const handleFocusTap = async (e: React.MouseEvent | React.TouchEvent) => {
+    if (!videoContainerRef.current || !isReady || disabled) return;
+
+    const rect = videoContainerRef.current.getBoundingClientRect();
+    let clientX: number, clientY: number;
+
+    if ('touches' in e) {
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    } else {
+      clientX = e.clientX;
+      clientY = e.clientY;
+    }
+
+    // Calculate position relative to container
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+
+    // Show focus indicator at tap position
+    setFocusPoint({ x, y });
+
+    // Calculate normalized coordinates (0-1) for the camera API
+    const normalizedX = x / rect.width;
+    const normalizedY = y / rect.height;
+
+    // Attempt to focus (works on supported devices)
+    await focusAt(normalizedX, normalizedY);
+
+    // Hide focus indicator after animation
+    setTimeout(() => {
+      setFocusPoint(null);
+    }, 1000);
   };
 
   // Error state
@@ -288,7 +327,12 @@ export function CameraCapture({
   return (
     <div className="relative h-[100dvh] w-full bg-black overflow-hidden flex flex-col">
       {/* Video feed container - takes remaining space */}
-      <div className="relative flex-1 min-h-0 overflow-hidden">
+      <div
+        ref={videoContainerRef}
+        className="relative flex-1 min-h-0 overflow-hidden"
+        onClick={handleFocusTap}
+        onTouchStart={handleFocusTap}
+      >
         <video
           ref={videoRef}
           autoPlay
@@ -310,6 +354,17 @@ export function CameraCapture({
 
         {/* Hidden canvas for capture */}
         <canvas ref={canvasRef} className="hidden" />
+
+        {/* Focus indicator */}
+        {focusPoint && (
+          <div
+            className="pointer-events-none absolute h-16 w-16 -translate-x-1/2 -translate-y-1/2 animate-pulse"
+            style={{ left: focusPoint.x, top: focusPoint.y }}
+          >
+            <div className="h-full w-full rounded-lg border-2 border-yellow-400 animate-[ping_0.5s_ease-out]" />
+            <div className="absolute inset-0 rounded-lg border-2 border-yellow-400" />
+          </div>
+        )}
 
         {/* Loading state */}
         {!isReady && (
@@ -417,10 +472,8 @@ export function CameraCapture({
 
         {/* Controls */}
         <div className="flex items-center justify-center gap-8 px-8 pb-6 pt-2">
-          {/* Gallery placeholder (left side) */}
-          <div className="h-14 w-14 rounded-full border-2 border-white/30 bg-white/10 flex items-center justify-center">
-            <ImageIcon className="h-6 w-6 text-white/50" />
-          </div>
+          {/* Spacer for alignment (left side) */}
+          {hasMultipleCameras && <div className="h-14 w-14" />}
 
           {/* Capture button */}
           <Button

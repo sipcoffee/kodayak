@@ -204,7 +204,7 @@ export default function GalleryPage() {
               size="icon"
               className="text-white hover:bg-white/10"
             >
-              <Camera className="h-5 w-5" />
+              <ArrowLeft className="h-5 w-5" />
             </Button>
             <div>
               <h1 className="text-lg font-semibold text-white">{event.name}</h1>

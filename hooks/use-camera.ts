@@ -16,6 +16,11 @@ interface ZoomCapabilities {
   step: number;
 }
 
+interface FocusCapabilities {
+  supported: boolean;
+  modes: string[];
+}
+
 interface CameraState {
   isReady: boolean;
   isCapturing: boolean;
@@ -24,6 +29,7 @@ interface CameraState {
   hasMultipleCameras: boolean;
   zoomLevel: number;
   zoomCapabilities: ZoomCapabilities;
+  focusCapabilities: FocusCapabilities;
 }
 
 export function useCamera(options: UseCameraOptions = {}) {
@@ -41,6 +47,7 @@ export function useCamera(options: UseCameraOptions = {}) {
     hasMultipleCameras: false,
     zoomLevel: 1,
     zoomCapabilities: { supported: false, nativeSupport: false, min: 1, max: 1, step: 0.1 },
+    focusCapabilities: { supported: false, modes: [] },
   });
 
   const stopStream = useCallback(() => {
@@ -81,7 +88,7 @@ export function useCamera(options: UseCameraOptions = {}) {
       const videoDevices = devices.filter((d) => d.kind === "videoinput");
       const hasMultipleCameras = videoDevices.length > 1;
 
-      // Check for zoom capabilities
+      // Check for zoom and focus capabilities
       const videoTrack = stream.getVideoTracks()[0];
       let zoomCapabilities: ZoomCapabilities = {
         supported: true, // Always enable zoom with CSS fallback
@@ -90,10 +97,12 @@ export function useCamera(options: UseCameraOptions = {}) {
         max: 5, // CSS fallback max zoom
         step: 0.1
       };
+      let focusCapabilities: FocusCapabilities = { supported: false, modes: [] };
 
       if (videoTrack) {
         const capabilities = videoTrack.getCapabilities() as MediaTrackCapabilities & {
           zoom?: { min: number; max: number; step: number };
+          focusMode?: string[];
         };
 
         if (capabilities.zoom) {
@@ -104,6 +113,14 @@ export function useCamera(options: UseCameraOptions = {}) {
             min: capabilities.zoom.min,
             max: capabilities.zoom.max,
             step: capabilities.zoom.step,
+          };
+        }
+
+        // Check for focus capabilities
+        if (capabilities.focusMode && capabilities.focusMode.length > 0) {
+          focusCapabilities = {
+            supported: true,
+            modes: capabilities.focusMode,
           };
         }
       }
@@ -121,6 +138,7 @@ export function useCamera(options: UseCameraOptions = {}) {
         hasMultipleCameras,
         zoomLevel: 1,
         zoomCapabilities,
+        focusCapabilities,
         error: null,
       }));
     } catch (error) {
@@ -159,6 +177,48 @@ export function useCamera(options: UseCameraOptions = {}) {
 
       return { ...prev, zoomLevel: clampedLevel };
     });
+  }, []);
+
+  // Focus at a specific point (x, y are normalized 0-1 coordinates)
+  const focusAt = useCallback(async (x: number, y: number): Promise<boolean> => {
+    if (!streamRef.current) return false;
+
+    const videoTrack = streamRef.current.getVideoTracks()[0];
+    if (!videoTrack) return false;
+
+    const capabilities = videoTrack.getCapabilities() as MediaTrackCapabilities & {
+      focusMode?: string[];
+    };
+
+    // Check if manual or single-shot focus is supported
+    if (!capabilities.focusMode) return false;
+
+    const supportsSingleShot = capabilities.focusMode.includes("single-shot");
+    const supportsManual = capabilities.focusMode.includes("manual");
+
+    if (!supportsSingleShot && !supportsManual) return false;
+
+    try {
+      // Apply focus constraints with point of interest
+      const constraints: MediaTrackConstraintSet & {
+        focusMode?: string;
+        pointsOfInterest?: { x: number; y: number }[];
+      } = {
+        focusMode: supportsSingleShot ? "single-shot" : "manual",
+      };
+
+      // Add point of interest if we can (normalized coordinates)
+      constraints.pointsOfInterest = [{ x: Math.max(0, Math.min(1, x)), y: Math.max(0, Math.min(1, y)) }];
+
+      await videoTrack.applyConstraints({
+        advanced: [constraints as MediaTrackConstraintSet],
+      });
+
+      return true;
+    } catch (error) {
+      console.error("Failed to focus:", error);
+      return false;
+    }
   }, []);
 
   const capturePhoto = useCallback(async (filter?: string, cssZoomLevel?: number): Promise<Blob | null> => {
@@ -257,5 +317,6 @@ export function useCamera(options: UseCameraOptions = {}) {
     capturePhoto,
     stopStream,
     setZoom,
+    focusAt,
   };
 }
