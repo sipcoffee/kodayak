@@ -69,14 +69,22 @@ export default function LoginForm() {
     setError(null);
 
     try {
-      const result = await authClient.signIn.email({
+      const { data, error } = await authClient.signIn.email({
         email: values.email,
         password: values.password,
-        callbackURL: "/admin",
       });
 
-      if (result.error) {
-        setError(result.error.message || "Invalid credentials");
+      if (error) {
+        setError(error.message || "Invalid credentials");
+        return;
+      }
+
+      // Redirect based on user role
+      const role = (data?.user as { role?: string })?.role;
+      if (role === "ADMIN") {
+        window.location.href = "/admin";
+      } else {
+        window.location.href = "/dashboard";
       }
     } catch {
       setError("An unexpected error occurred");
