@@ -195,26 +195,10 @@ export default function CapturePage() {
       {/* Camera */}
       <CameraCapture
         onCapture={handleCapture}
+        onGalleryClick={() => router.push(`/c/${slug}/gallery`)}
+        galleryBadgeCount={localPhotos.length}
         primaryColor={primaryColor}
       />
-
-      {/* Gallery button with pending count badge */}
-      <Button
-        onClick={() => router.push(`/c/${slug}/gallery`)}
-        variant="outline"
-        size="icon"
-        className="absolute bottom-8 left-4 z-10 h-14 w-14 rounded-full border-2 border-white bg-black/50 text-white hover:bg-white/10"
-      >
-        <Images className="h-6 w-6" />
-        {localPhotos.length > 0 && (
-          <span
-            className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold text-white"
-            style={{ backgroundColor: primaryColor }}
-          >
-            {localPhotos.length}
-          </span>
-        )}
-      </Button>
     </div>
   );
 }

@@ -149,9 +149,8 @@ export default function EventDashboard() {
           {/* Gallery button */}
           <Button
             onClick={() => router.push(`/c/${slug}/gallery`)}
-            variant="outline"
             size="lg"
-            className="h-14 border-white/20 text-lg font-semibold text-white hover:bg-white/10"
+            className="h-14 border-2 border-white/30 bg-white/5 text-lg font-semibold text-white hover:bg-white/15 hover:border-white/50"
           >
             <Images className="mr-2 h-5 w-5" />
             View Gallery

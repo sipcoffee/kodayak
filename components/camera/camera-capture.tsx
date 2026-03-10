@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { Camera, SwitchCamera, X, Check, RefreshCw } from "lucide-react";
+import { Camera, SwitchCamera, X, Check, RefreshCw, Images } from "lucide-react";
 import { useCamera } from "@/hooks/use-camera";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -94,6 +94,8 @@ const FILTER_PRESETS: FilterPreset[] = [
 interface CameraCaptureProps {
   onCapture: (blob: Blob) => void;
   onCancel?: () => void;
+  onGalleryClick?: () => void;
+  galleryBadgeCount?: number;
   disabled?: boolean;
   primaryColor?: string;
 }
@@ -101,6 +103,8 @@ interface CameraCaptureProps {
 export function CameraCapture({
   onCapture,
   onCancel,
+  onGalleryClick,
+  galleryBadgeCount = 0,
   disabled = false,
   primaryColor = "#E91E63",
 }: CameraCaptureProps) {
@@ -126,6 +130,10 @@ export function CameraCapture({
   const [selectedFilter, setSelectedFilter] = useState<FilterPreset>(FILTER_PRESETS[0]);
   const [focusPoint, setFocusPoint] = useState<{ x: number; y: number } | null>(null);
   const videoContainerRef = useRef<HTMLDivElement>(null);
+
+  // Zoom slider state and refs - must be declared before any conditional returns
+  const zoomSliderRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   useEffect(() => {
     startCamera();
@@ -267,10 +275,6 @@ export function CameraCapture({
       </div>
     );
   }
-
-  // Zoom slider state and refs
-  const zoomSliderRef = useRef<HTMLDivElement>(null);
-  const [isDragging, setIsDragging] = useState(false);
 
   const handleZoomDrag = (clientX: number) => {
     if (!zoomSliderRef.current || !zoomCapabilities.supported) return;
@@ -471,9 +475,28 @@ export function CameraCapture({
         )}
 
         {/* Controls */}
-        <div className="flex items-center justify-center gap-8 px-8 pb-6 pt-2">
-          {/* Spacer for alignment (left side) */}
-          {hasMultipleCameras && <div className="h-14 w-14" />}
+        <div className="flex items-center justify-center gap-6 px-6 pb-6 pt-2">
+          {/* Gallery button (left side) */}
+          {onGalleryClick ? (
+            <Button
+              onClick={onGalleryClick}
+              size="lg"
+              className="relative h-14 w-14 rounded-full border-2 border-white/30 bg-white/10 text-white hover:bg-white/20"
+              disabled={disabled}
+            >
+              <Images className="h-6 w-6" />
+              {galleryBadgeCount > 0 && (
+                <span
+                  className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full text-xs font-bold text-white"
+                  style={{ backgroundColor: primaryColor }}
+                >
+                  {galleryBadgeCount}
+                </span>
+              )}
+            </Button>
+          ) : (
+            <div className="h-14 w-14" />
+          )}
 
           {/* Capture button */}
           <Button
@@ -493,9 +516,8 @@ export function CameraCapture({
           {hasMultipleCameras ? (
             <Button
               onClick={switchCamera}
-              variant="outline"
               size="lg"
-              className="h-14 w-14 rounded-full border-2 border-white bg-transparent text-white hover:bg-white/10"
+              className="h-14 w-14 rounded-full border-2 border-white/30 bg-white/10 text-white hover:bg-white/20"
               disabled={!isReady || isCapturing || disabled}
             >
               <SwitchCamera className="h-6 w-6" />
