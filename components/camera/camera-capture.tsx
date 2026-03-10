@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { Camera, SwitchCamera, X, Check, RefreshCw, Images } from "lucide-react";
+import { Camera, SwitchCamera, X, Check, RefreshCw, Images, Sparkles } from "lucide-react";
 import { useCamera } from "@/hooks/use-camera";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -210,18 +210,23 @@ export function CameraCapture({
   // Error state
   if (error) {
     return (
-      <div className="flex h-full flex-col items-center justify-center bg-black p-4 text-center text-white">
-        <Camera className="mb-4 h-16 w-16 opacity-50" />
-        <h2 className="mb-2 text-xl font-semibold">Camera Access Required</h2>
-        <p className="mb-6 text-sm text-gray-400">
+      <div className="flex h-full flex-col items-center justify-center bg-gradient-to-br from-gray-900 via-black to-gray-900 p-6 text-center">
+        <div className="relative mb-6">
+          <div className="absolute inset-0 rounded-full bg-white/10 blur-xl" />
+          <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-white/5 backdrop-blur-sm border border-white/10">
+            <Camera className="h-10 w-10 text-gray-400" />
+          </div>
+        </div>
+        <h2 className="mb-2 text-xl font-semibold text-white">Camera Access Required</h2>
+        <p className="mb-8 max-w-xs text-sm text-gray-400">
           {error === "Permission denied"
-            ? "Please allow camera access to take photos."
+            ? "Please allow camera access in your browser settings to take photos."
             : error}
         </p>
         <Button
           onClick={() => startCamera()}
-          variant="outline"
-          className="border-white text-white hover:bg-white/10"
+          className="rounded-full px-6"
+          style={{ backgroundColor: primaryColor }}
         >
           <RefreshCw className="mr-2 h-4 w-4" />
           Try Again
@@ -240,37 +245,45 @@ export function CameraCapture({
           className="h-full w-full object-contain"
         />
 
-        <div className="absolute bottom-0 left-0 right-0 flex items-center justify-center gap-8 bg-gradient-to-t from-black/80 to-transparent p-8">
-          <Button
-            onClick={handleRetake}
-            variant="outline"
-            size="lg"
-            className="h-16 w-16 rounded-full border-2 border-white bg-transparent text-white hover:bg-white/10"
-            disabled={disabled}
-          >
-            <X className="h-8 w-8" />
-          </Button>
+        {/* Preview overlay gradient */}
+        <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-black via-black/80 to-transparent" />
 
-          <Button
-            onClick={handleConfirm}
-            size="lg"
-            className="h-20 w-20 rounded-full"
-            style={{ backgroundColor: primaryColor }}
-            disabled={disabled}
-          >
-            <Check className="h-10 w-10" />
-          </Button>
+        {/* Preview actions */}
+        <div className="absolute bottom-0 left-0 right-0 p-6 pb-8">
+          <p className="text-center text-sm text-gray-400 mb-6">
+            <Sparkles className="inline h-4 w-4 mr-1" />
+            Looking good! Save this photo?
+          </p>
+          <div className="flex items-center justify-center gap-6">
+            <button
+              onClick={handleRetake}
+              disabled={disabled}
+              className="flex h-16 w-16 items-center justify-center rounded-full bg-white/10 backdrop-blur-sm border-2 border-white/30 transition-all hover:bg-white/20 hover:scale-105 active:scale-95"
+            >
+              <X className="h-7 w-7 text-white" />
+            </button>
+
+            <button
+              onClick={handleConfirm}
+              disabled={disabled}
+              className="flex h-20 w-20 items-center justify-center rounded-full transition-all hover:scale-105 active:scale-95"
+              style={{
+                backgroundColor: primaryColor,
+                boxShadow: `0 8px 32px ${primaryColor}50`
+              }}
+            >
+              <Check className="h-9 w-9 text-white" />
+            </button>
+          </div>
         </div>
 
         {onCancel && (
-          <Button
+          <button
             onClick={onCancel}
-            variant="ghost"
-            size="icon"
-            className="absolute right-4 top-4 text-white hover:bg-white/10"
+            className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 backdrop-blur-sm transition-colors hover:bg-white/20"
           >
-            <X className="h-6 w-6" />
-          </Button>
+            <X className="h-5 w-5 text-white" />
+          </button>
         )}
       </div>
     );
@@ -362,98 +375,107 @@ export function CameraCapture({
         {/* Focus indicator */}
         {focusPoint && (
           <div
-            className="pointer-events-none absolute h-16 w-16 -translate-x-1/2 -translate-y-1/2 animate-pulse"
+            className="pointer-events-none absolute h-20 w-20 -translate-x-1/2 -translate-y-1/2"
             style={{ left: focusPoint.x, top: focusPoint.y }}
           >
-            <div className="h-full w-full rounded-lg border-2 border-yellow-400 animate-[ping_0.5s_ease-out]" />
-            <div className="absolute inset-0 rounded-lg border-2 border-yellow-400" />
+            <div className="h-full w-full rounded-xl border-2 border-yellow-400/80 animate-[ping_0.5s_ease-out]" />
+            <div className="absolute inset-2 rounded-lg border border-yellow-400/60" />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="h-1 w-1 rounded-full bg-yellow-400" />
+            </div>
           </div>
         )}
 
         {/* Loading state */}
         {!isReady && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-white/30 border-t-white" />
+          <div className="absolute inset-0 flex items-center justify-center bg-black">
+            <div className="flex flex-col items-center gap-3">
+              <div className="relative">
+                <div className="h-10 w-10 rounded-full border-2 border-white/20 border-t-white animate-spin" />
+              </div>
+              <p className="text-sm text-gray-400">Starting camera...</p>
+            </div>
           </div>
         )}
 
         {/* Close button */}
         {onCancel && (
-          <Button
+          <button
             onClick={onCancel}
-            variant="ghost"
-            size="icon"
-            className="absolute right-4 top-4 text-white hover:bg-white/10"
+            className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-black/30 backdrop-blur-sm transition-colors hover:bg-black/50"
           >
-            <X className="h-6 w-6" />
-          </Button>
+            <X className="h-5 w-5 text-white" />
+          </button>
         )}
       </div>
 
       {/* Bottom controls section - fixed height */}
-      <div className="flex-shrink-0 bg-black">
+      <div className="flex-shrink-0 bg-gradient-to-t from-black via-black to-black/80">
         {/* Zoom slider - draggable */}
         {zoomCapabilities.supported && isReady && (
           <div className="px-6 py-3">
             <div className="flex items-center gap-3">
-              <span className="text-xs text-white/70 w-8">{zoomCapabilities.min.toFixed(1)}x</span>
+              <span className="text-xs text-white/50 w-8 font-medium">{zoomCapabilities.min.toFixed(1)}x</span>
               <div
                 ref={zoomSliderRef}
-                className="relative flex-1 h-8 flex items-center cursor-pointer touch-none"
+                className="relative flex-1 h-10 flex items-center cursor-pointer touch-none"
                 onMouseDown={handleZoomMouseDown}
                 onTouchStart={handleZoomTouchStart}
                 onTouchMove={handleZoomTouchMove}
                 onTouchEnd={handleZoomTouchEnd}
               >
                 {/* Track background */}
-                <div className="absolute inset-x-0 h-1 bg-white/30 rounded-full" />
+                <div className="absolute inset-x-0 h-1 bg-white/20 rounded-full" />
                 {/* Track fill */}
                 <div
-                  className="absolute left-0 h-1 bg-white rounded-full"
+                  className="absolute left-0 h-1 rounded-full transition-all"
                   style={{
                     width: `${((zoomLevel - zoomCapabilities.min) / (zoomCapabilities.max - zoomCapabilities.min)) * 100}%`,
+                    backgroundColor: primaryColor,
                   }}
                 />
                 {/* Thumb */}
                 <div
                   className={cn(
-                    "absolute h-6 w-6 bg-white rounded-full shadow-lg -translate-x-1/2 transition-transform",
+                    "absolute h-7 w-7 rounded-full shadow-lg -translate-x-1/2 transition-all border-2",
                     isDragging && "scale-110"
                   )}
                   style={{
                     left: `${((zoomLevel - zoomCapabilities.min) / (zoomCapabilities.max - zoomCapabilities.min)) * 100}%`,
+                    backgroundColor: primaryColor,
+                    borderColor: 'white',
                   }}
                 >
-                  <span className="absolute inset-0 flex items-center justify-center text-[8px] font-bold text-black">
+                  <span className="absolute inset-0 flex items-center justify-center text-[9px] font-bold text-white">
                     {zoomLevel.toFixed(1)}
                   </span>
                 </div>
               </div>
-              <span className="text-xs text-white/70 w-8 text-right">{zoomCapabilities.max.toFixed(1)}x</span>
+              <span className="text-xs text-white/50 w-8 text-right font-medium">{zoomCapabilities.max.toFixed(1)}x</span>
             </div>
           </div>
         )}
 
         {/* Filter selector */}
         {isReady && (
-          <div className="px-2 pb-2">
-            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+          <div className="px-2 pb-3">
+            <div className="flex gap-2.5 overflow-x-auto pb-1 scrollbar-hide px-2">
               {FILTER_PRESETS.map((filter) => (
                 <button
                   key={filter.id}
                   onClick={() => setSelectedFilter(filter)}
                   className={cn(
-                    "flex flex-col items-center gap-1 flex-shrink-0 transition-transform",
-                    selectedFilter.id === filter.id && "scale-105"
+                    "flex flex-col items-center gap-1.5 flex-shrink-0 transition-all duration-200",
+                    selectedFilter.id === filter.id ? "scale-105" : "opacity-70"
                   )}
                   disabled={disabled}
                 >
                   <div
                     className={cn(
-                      "h-12 w-12 rounded-lg border-2 transition-all",
+                      "h-14 w-14 rounded-2xl border-2 transition-all shadow-lg",
                       selectedFilter.id === filter.id
-                        ? "border-white shadow-lg"
-                        : "border-transparent opacity-70"
+                        ? "border-white shadow-white/20"
+                        : "border-transparent"
                     )}
                     style={{
                       backgroundColor: filter.preview,
@@ -462,8 +484,8 @@ export function CameraCapture({
                   />
                   <span
                     className={cn(
-                      "text-[10px] text-white transition-opacity",
-                      selectedFilter.id === filter.id ? "opacity-100" : "opacity-60"
+                      "text-[10px] font-medium transition-all",
+                      selectedFilter.id === filter.id ? "text-white" : "text-white/50"
                     )}
                   >
                     {filter.name}
@@ -475,53 +497,55 @@ export function CameraCapture({
         )}
 
         {/* Controls */}
-        <div className="flex items-center justify-center gap-6 px-6 pb-6 pt-2">
+        <div className="flex items-center justify-center gap-8 px-6 pb-8 pt-2">
           {/* Gallery button (left side) */}
           {onGalleryClick ? (
-            <Button
+            <button
               onClick={onGalleryClick}
-              size="lg"
-              className="relative h-14 w-14 rounded-full border-2 border-white/30 bg-white/10 text-white hover:bg-white/20"
               disabled={disabled}
+              className="relative flex h-14 w-14 items-center justify-center rounded-full bg-white/10 backdrop-blur-sm border border-white/20 transition-all hover:bg-white/20 hover:scale-105 active:scale-95"
             >
-              <Images className="h-6 w-6" />
+              <Images className="h-6 w-6 text-white" />
               {galleryBadgeCount > 0 && (
                 <span
-                  className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full text-xs font-bold text-white"
+                  className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full text-xs font-bold text-white ring-2 ring-black"
                   style={{ backgroundColor: primaryColor }}
                 >
                   {galleryBadgeCount}
                 </span>
               )}
-            </Button>
+            </button>
           ) : (
             <div className="h-14 w-14" />
           )}
 
           {/* Capture button */}
-          <Button
+          <button
             onClick={handleCapture}
-            size="lg"
+            disabled={!isReady || isCapturing || disabled}
             className={cn(
-              "h-20 w-20 rounded-full border-4 border-white transition-transform",
+              "relative flex h-20 w-20 items-center justify-center rounded-full border-4 border-white transition-all hover:scale-105 active:scale-95",
               isCapturing && "scale-95"
             )}
-            style={{ backgroundColor: primaryColor }}
-            disabled={!isReady || isCapturing || disabled}
+            style={{
+              backgroundColor: primaryColor,
+              boxShadow: `0 0 40px ${primaryColor}60`
+            }}
           >
-            <Camera className="h-8 w-8" />
-          </Button>
+            {/* Inner ring */}
+            <div className="absolute inset-1.5 rounded-full border-2 border-white/30" />
+            <Camera className="h-8 w-8 text-white" />
+          </button>
 
           {/* Switch camera button (right side) */}
           {hasMultipleCameras ? (
-            <Button
+            <button
               onClick={switchCamera}
-              size="lg"
-              className="h-14 w-14 rounded-full border-2 border-white/30 bg-white/10 text-white hover:bg-white/20"
               disabled={!isReady || isCapturing || disabled}
+              className="flex h-14 w-14 items-center justify-center rounded-full bg-white/10 backdrop-blur-sm border border-white/20 transition-all hover:bg-white/20 hover:scale-105 active:scale-95"
             >
-              <SwitchCamera className="h-6 w-6" />
-            </Button>
+              <SwitchCamera className="h-6 w-6 text-white" />
+            </button>
           ) : (
             <div className="h-14 w-14" />
           )}
