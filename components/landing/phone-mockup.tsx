@@ -1,24 +1,8 @@
-"use client";
-
-import { useState, useEffect } from "react";
 import Image from "next/image";
 import { Camera, FlipHorizontal, Zap, ImageIcon } from "lucide-react";
 
 export function PhoneMockup() {
-  const [flash, setFlash] = useState(false);
-  const [photoCount, setPhotoCount] = useState(12);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setFlash(true);
-      setTimeout(() => {
-        setFlash(false);
-        setPhotoCount((prev) => prev + 1);
-      }, 150);
-    }, 4000);
-
-    return () => clearInterval(interval);
-  }, []);
+  const photoCount = 12;
 
   return (
     <div className="relative mx-auto w-[280px] md:w-[320px]">
@@ -51,12 +35,7 @@ export function PhoneMockup() {
             </div>
 
             {/* Focus indicator */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 border-2 border-yellow-400 rounded-lg animate-pulse" />
-
-            {/* Flash effect */}
-            {flash && (
-              <div className="absolute inset-0 bg-white animate-flash z-30" />
-            )}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 border-2 border-yellow-400 rounded-lg" />
           </div>
 
           {/* Top bar */}
