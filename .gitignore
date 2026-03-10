@@ -53,3 +53,5 @@ public/workbox-*.js.map
 
 # Local uploads (now using R2)
 public/uploads
+
+.claude/settings.local.json
