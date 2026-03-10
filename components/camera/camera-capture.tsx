@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { Camera, SwitchCamera, X, Check, RefreshCw, Images, Sparkles } from "lucide-react";
 import { useCamera } from "@/hooks/use-camera";
 import { Button } from "@/components/ui/button";
@@ -11,84 +11,22 @@ interface FilterPreset {
   id: string;
   name: string;
   filter: string;
-  preview: string; // Background color for preview thumbnail
+  preview: string;
 }
 
 const FILTER_PRESETS: FilterPreset[] = [
-  // Standard filters
-  {
-    id: "normal",
-    name: "Normal",
-    filter: "none",
-    preview: "#666",
-  },
-  {
-    id: "bw",
-    name: "B&W",
-    filter: "grayscale(100%)",
-    preview: "#888",
-  },
-  {
-    id: "vivid",
-    name: "Vivid",
-    filter: "saturate(150%) contrast(110%)",
-    preview: "#e91e63",
-  },
-  // Disposable camera / Vintage theme
-  {
-    id: "disposable",
-    name: "Disposable",
-    filter: "sepia(20%) brightness(110%) contrast(90%) saturate(85%)",
-    preview: "#d4a574",
-  },
-  {
-    id: "losttape",
-    name: "Lost Tape",
-    filter: "saturate(70%) contrast(110%) brightness(105%) sepia(15%) hue-rotate(-5deg)",
-    preview: "#7a8b8c",
-  },
-  {
-    id: "90sflash",
-    name: "90s Flash",
-    filter: "contrast(115%) brightness(108%) saturate(110%) sepia(10%)",
-    preview: "#ffcc66",
-  },
-  {
-    id: "fadedfilm",
-    name: "Faded Film",
-    filter: "saturate(60%) sepia(25%) brightness(110%) contrast(85%)",
-    preview: "#c9b896",
-  },
-  {
-    id: "vhs",
-    name: "VHS",
-    filter: "saturate(120%) contrast(95%) brightness(105%) hue-rotate(5deg) sepia(10%)",
-    preview: "#8b7bb5",
-  },
-  {
-    id: "goldenhour",
-    name: "Golden Hour",
-    filter: "sepia(35%) brightness(108%) saturate(130%) contrast(95%)",
-    preview: "#e6a64c",
-  },
-  {
-    id: "noir",
-    name: "Noir",
-    filter: "grayscale(100%) contrast(130%) brightness(95%)",
-    preview: "#333",
-  },
-  {
-    id: "midnight",
-    name: "Midnight",
-    filter: "brightness(90%) contrast(120%) saturate(80%) hue-rotate(200deg) sepia(20%)",
-    preview: "#2d4a6f",
-  },
-  {
-    id: "polaroid",
-    name: "Polaroid",
-    filter: "sepia(15%) contrast(90%) brightness(110%) saturate(90%)",
-    preview: "#f5e6d3",
-  },
+  { id: "normal", name: "Normal", filter: "none", preview: "#666" },
+  { id: "bw", name: "B&W", filter: "grayscale(100%)", preview: "#888" },
+  { id: "vivid", name: "Vivid", filter: "saturate(150%) contrast(110%)", preview: "#e91e63" },
+  { id: "disposable", name: "Disposable", filter: "sepia(20%) brightness(110%) contrast(90%) saturate(85%)", preview: "#d4a574" },
+  { id: "losttape", name: "Lost Tape", filter: "saturate(70%) contrast(110%) brightness(105%) sepia(15%) hue-rotate(-5deg)", preview: "#7a8b8c" },
+  { id: "90sflash", name: "90s Flash", filter: "contrast(115%) brightness(108%) saturate(110%) sepia(10%)", preview: "#ffcc66" },
+  { id: "fadedfilm", name: "Faded Film", filter: "saturate(60%) sepia(25%) brightness(110%) contrast(85%)", preview: "#c9b896" },
+  { id: "vhs", name: "VHS", filter: "saturate(120%) contrast(95%) brightness(105%) hue-rotate(5deg) sepia(10%)", preview: "#8b7bb5" },
+  { id: "goldenhour", name: "Golden Hour", filter: "sepia(35%) brightness(108%) saturate(130%) contrast(95%)", preview: "#e6a64c" },
+  { id: "noir", name: "Noir", filter: "grayscale(100%) contrast(130%) brightness(95%)", preview: "#333" },
+  { id: "midnight", name: "Midnight", filter: "brightness(90%) contrast(120%) saturate(80%) hue-rotate(200deg) sepia(20%)", preview: "#2d4a6f" },
+  { id: "polaroid", name: "Polaroid", filter: "sepia(15%) contrast(90%) brightness(110%) saturate(90%)", preview: "#f5e6d3" },
 ];
 
 interface CameraCaptureProps {
@@ -117,7 +55,6 @@ export function CameraCapture({
     hasMultipleCameras,
     zoomLevel,
     zoomCapabilities,
-    focusCapabilities,
     startCamera,
     switchCamera,
     capturePhoto,
@@ -129,18 +66,49 @@ export function CameraCapture({
   const [capturedBlob, setCapturedBlob] = useState<Blob | null>(null);
   const [selectedFilter, setSelectedFilter] = useState<FilterPreset>(FILTER_PRESETS[0]);
   const [focusPoint, setFocusPoint] = useState<{ x: number; y: number } | null>(null);
-  const videoContainerRef = useRef<HTMLDivElement>(null);
-
-  // Zoom slider state and refs - must be declared before any conditional returns
-  const zoomSliderRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
 
+  const videoContainerRef = useRef<HTMLDivElement>(null);
+  const zoomSliderRef = useRef<HTMLDivElement>(null);
+
+  // Start camera on mount
   useEffect(() => {
     startCamera();
   }, [startCamera]);
 
+  // Handle zoom drag - defined with useCallback before useEffect that uses it
+  const handleZoomDrag = useCallback((clientX: number) => {
+    if (!zoomSliderRef.current || !zoomCapabilities.supported) return;
+    const rect = zoomSliderRef.current.getBoundingClientRect();
+    const percentage = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    const newZoom = zoomCapabilities.min + percentage * (zoomCapabilities.max - zoomCapabilities.min);
+    setZoom(newZoom);
+  }, [zoomCapabilities.supported, zoomCapabilities.min, zoomCapabilities.max, setZoom]);
+
+  // Mouse drag effect - MUST be before any conditional returns
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (isDragging) {
+        handleZoomDrag(e.clientX);
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    if (isDragging) {
+      document.addEventListener("mousemove", handleMouseMove);
+      document.addEventListener("mouseup", handleMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isDragging, handleZoomDrag]);
+
   const handleCapture = async () => {
-    // If using CSS zoom (not native), we need to crop the center portion
     const useCssZoom = !zoomCapabilities.nativeSupport && zoomLevel > 1;
     const blob = await capturePhoto(selectedFilter.filter, useCssZoom ? zoomLevel : undefined);
     if (blob) {
@@ -153,14 +121,12 @@ export function CameraCapture({
     if (capturedBlob) {
       onCapture(capturedBlob);
       clearPreview();
-      // Restart camera after confirming
       startCamera();
     }
   };
 
   const handleRetake = () => {
     clearPreview();
-    // Restart camera after retaking
     startCamera();
   };
 
@@ -172,7 +138,6 @@ export function CameraCapture({
     setCapturedBlob(null);
   };
 
-  // Handle tap to focus
   const handleFocusTap = async (e: React.MouseEvent | React.TouchEvent) => {
     if (!videoContainerRef.current || !isReady || disabled) return;
 
@@ -187,24 +152,39 @@ export function CameraCapture({
       clientY = e.clientY;
     }
 
-    // Calculate position relative to container
     const x = clientX - rect.left;
     const y = clientY - rect.top;
 
-    // Show focus indicator at tap position
     setFocusPoint({ x, y });
 
-    // Calculate normalized coordinates (0-1) for the camera API
     const normalizedX = x / rect.width;
     const normalizedY = y / rect.height;
 
-    // Attempt to focus (works on supported devices)
     await focusAt(normalizedX, normalizedY);
 
-    // Hide focus indicator after animation
     setTimeout(() => {
       setFocusPoint(null);
     }, 1000);
+  };
+
+  const handleZoomTouchStart = (e: React.TouchEvent) => {
+    setIsDragging(true);
+    handleZoomDrag(e.touches[0].clientX);
+  };
+
+  const handleZoomTouchMove = (e: React.TouchEvent) => {
+    if (isDragging) {
+      handleZoomDrag(e.touches[0].clientX);
+    }
+  };
+
+  const handleZoomTouchEnd = () => {
+    setIsDragging(false);
+  };
+
+  const handleZoomMouseDown = (e: React.MouseEvent) => {
+    setIsDragging(true);
+    handleZoomDrag(e.clientX);
   };
 
   // Error state
@@ -245,10 +225,8 @@ export function CameraCapture({
           className="h-full w-full object-contain"
         />
 
-        {/* Preview overlay gradient */}
         <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-black via-black/80 to-transparent" />
 
-        {/* Preview actions */}
         <div className="absolute bottom-0 left-0 right-0 p-6 pb-8">
           <p className="text-center text-sm text-gray-400 mb-6">
             <Sparkles className="inline h-4 w-4 mr-1" />
@@ -289,61 +267,9 @@ export function CameraCapture({
     );
   }
 
-  const handleZoomDrag = (clientX: number) => {
-    if (!zoomSliderRef.current || !zoomCapabilities.supported) return;
-
-    const rect = zoomSliderRef.current.getBoundingClientRect();
-    const percentage = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-    const newZoom = zoomCapabilities.min + percentage * (zoomCapabilities.max - zoomCapabilities.min);
-    setZoom(newZoom);
-  };
-
-  const handleZoomTouchStart = (e: React.TouchEvent) => {
-    setIsDragging(true);
-    handleZoomDrag(e.touches[0].clientX);
-  };
-
-  const handleZoomTouchMove = (e: React.TouchEvent) => {
-    if (isDragging) {
-      handleZoomDrag(e.touches[0].clientX);
-    }
-  };
-
-  const handleZoomTouchEnd = () => {
-    setIsDragging(false);
-  };
-
-  const handleZoomMouseDown = (e: React.MouseEvent) => {
-    setIsDragging(true);
-    handleZoomDrag(e.clientX);
-  };
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (isDragging) {
-        handleZoomDrag(e.clientX);
-      }
-    };
-
-    const handleMouseUp = () => {
-      setIsDragging(false);
-    };
-
-    if (isDragging) {
-      document.addEventListener("mousemove", handleMouseMove);
-      document.addEventListener("mouseup", handleMouseUp);
-    }
-
-    return () => {
-      document.removeEventListener("mousemove", handleMouseMove);
-      document.removeEventListener("mouseup", handleMouseUp);
-    };
-  }, [isDragging]);
-
   // Camera mode
   return (
     <div className="relative h-[100dvh] w-full bg-black overflow-hidden flex flex-col">
-      {/* Video feed container - takes remaining space */}
       <div
         ref={videoContainerRef}
         className="relative flex-1 min-h-0 overflow-hidden"
@@ -357,7 +283,6 @@ export function CameraCapture({
           muted
           style={{
             filter: selectedFilter.filter,
-            // Apply CSS transform zoom when native zoom is not supported
             ...(!zoomCapabilities.nativeSupport && zoomLevel > 1 ? {
               transform: `scale(${zoomLevel})`,
               transformOrigin: 'center center',
@@ -369,10 +294,8 @@ export function CameraCapture({
           )}
         />
 
-        {/* Hidden canvas for capture */}
         <canvas ref={canvasRef} className="hidden" />
 
-        {/* Focus indicator */}
         {focusPoint && (
           <div
             className="pointer-events-none absolute h-20 w-20 -translate-x-1/2 -translate-y-1/2"
@@ -386,7 +309,6 @@ export function CameraCapture({
           </div>
         )}
 
-        {/* Loading state */}
         {!isReady && (
           <div className="absolute inset-0 flex items-center justify-center bg-black">
             <div className="flex flex-col items-center gap-3">
@@ -398,7 +320,6 @@ export function CameraCapture({
           </div>
         )}
 
-        {/* Close button */}
         {onCancel && (
           <button
             onClick={onCancel}
@@ -409,9 +330,7 @@ export function CameraCapture({
         )}
       </div>
 
-      {/* Bottom controls section - fixed height */}
       <div className="flex-shrink-0 bg-gradient-to-t from-black via-black to-black/80">
-        {/* Zoom slider - draggable */}
         {zoomCapabilities.supported && isReady && (
           <div className="px-6 py-3">
             <div className="flex items-center gap-3">
@@ -424,9 +343,7 @@ export function CameraCapture({
                 onTouchMove={handleZoomTouchMove}
                 onTouchEnd={handleZoomTouchEnd}
               >
-                {/* Track background */}
                 <div className="absolute inset-x-0 h-1 bg-white/20 rounded-full" />
-                {/* Track fill */}
                 <div
                   className="absolute left-0 h-1 rounded-full transition-all"
                   style={{
@@ -434,7 +351,6 @@ export function CameraCapture({
                     backgroundColor: primaryColor,
                   }}
                 />
-                {/* Thumb */}
                 <div
                   className={cn(
                     "absolute h-7 w-7 rounded-full shadow-lg -translate-x-1/2 transition-all border-2",
@@ -456,7 +372,6 @@ export function CameraCapture({
           </div>
         )}
 
-        {/* Filter selector */}
         {isReady && (
           <div className="px-2 pb-3">
             <div className="flex gap-2.5 overflow-x-auto pb-1 scrollbar-hide px-2">
@@ -496,9 +411,7 @@ export function CameraCapture({
           </div>
         )}
 
-        {/* Controls */}
         <div className="flex items-center justify-center gap-8 px-6 pb-8 pt-2">
-          {/* Gallery button (left side) */}
           {onGalleryClick ? (
             <button
               onClick={onGalleryClick}
@@ -519,7 +432,6 @@ export function CameraCapture({
             <div className="h-14 w-14" />
           )}
 
-          {/* Capture button */}
           <button
             onClick={handleCapture}
             disabled={!isReady || isCapturing || disabled}
@@ -532,12 +444,10 @@ export function CameraCapture({
               boxShadow: `0 0 40px ${primaryColor}60`
             }}
           >
-            {/* Inner ring */}
             <div className="absolute inset-1.5 rounded-full border-2 border-white/30" />
             <Camera className="h-8 w-8 text-white" />
           </button>
 
-          {/* Switch camera button (right side) */}
           {hasMultipleCameras ? (
             <button
               onClick={switchCamera}
