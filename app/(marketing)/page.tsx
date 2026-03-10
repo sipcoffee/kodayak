@@ -104,7 +104,7 @@ export default function LandingPage() {
                 </Button>
               </div>
 
-              {/* Social proof */}
+              {/* Social proof - commented out until we have actual data
               <div className="mt-12 flex flex-col sm:flex-row items-center gap-6 justify-center lg:justify-start animate-slide-up-fade animation-delay-600">
                 <div className="flex -space-x-3">
                   {["🎉", "💒", "🎂", "🎊", "👨‍👩‍👧"].map((emoji, i) => (
@@ -130,6 +130,7 @@ export default function LandingPage() {
                   </div>
                 </div>
               </div>
+              */}
             </div>
 
             {/* Right content - Phone mockup */}
@@ -143,7 +144,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Trusted By / Stats Section */}
+      {/* Trusted By / Stats Section - commented out until we have actual data
       <section className="py-16 bg-muted/30 border-y">
         <div className="container px-6 md:px-16">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
@@ -170,6 +171,7 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+      */}
 
       {/* How It Works */}
       <section id="how-it-works" className="py-24 md:py-32 relative">
@@ -472,7 +474,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Testimonials */}
+      {/* Testimonials - commented out until we have actual data
       <section className="py-24 md:py-32 bg-muted/30 relative overflow-hidden">
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute -top-20 -left-20 w-96 h-96 rounded-full bg-pink-200/20 blur-3xl" />
@@ -554,6 +556,7 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+      */}
 
       {/* CTA */}
       <section className="py-24 md:py-32 relative">
