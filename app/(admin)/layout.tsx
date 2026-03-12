@@ -19,6 +19,7 @@ import {
   Calendar,
   BarChart3,
   CreditCard,
+  Ticket,
   LogOut,
   Menu,
   X,
@@ -58,6 +59,12 @@ const navigation = [
     href: "/admin/plans",
     icon: CreditCard,
     description: "Pricing & plans"
+  },
+  {
+    name: "Film Codes",
+    href: "/admin/film-codes",
+    icon: Ticket,
+    description: "Redemption codes"
   },
 ];
 
@@ -115,6 +122,7 @@ export default function AdminLayout({
                 width={24}
                 height={24}
                 className="rounded"
+                style={{ width: "auto", height: "auto" }}
               />
             </div>
             <div className="flex items-center gap-2">

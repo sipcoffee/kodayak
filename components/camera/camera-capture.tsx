@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef, useCallback } from "react";
-import { Camera, SwitchCamera, X, Check, RefreshCw, Images, Sparkles } from "lucide-react";
+import { Camera, SwitchCamera, X, Check, RefreshCw, Images, Sparkles, Loader } from "lucide-react";
 import { useCamera } from "@/hooks/use-camera";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -311,12 +311,7 @@ export function CameraCapture({
 
         {!isReady && (
           <div className="absolute inset-0 flex items-center justify-center bg-black">
-            <div className="flex flex-col items-center gap-3">
-              <div className="relative">
-                <div className="h-10 w-10 rounded-full border-2 border-white/20 border-t-white animate-spin" />
-              </div>
-              <p className="text-sm text-gray-400">Starting camera...</p>
-            </div>
+            <Loader className="h-8 w-8 text-white animate-spin" />
           </div>
         )}
 

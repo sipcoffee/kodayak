@@ -3,8 +3,10 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import useSWR from "swr";
 import { authClient } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
+import { fetcher } from "@/lib/swr";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,7 +24,7 @@ import {
   Menu,
   X,
   ChevronRight,
-  User,
+  Film,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -31,33 +33,44 @@ const navigation = [
     name: "Dashboard",
     href: "/dashboard",
     icon: LayoutDashboard,
-    description: "Overview & stats"
+    description: "Overview & stats",
   },
   {
     name: "Events",
     href: "/events",
     icon: Calendar,
-    description: "Manage your events"
+    description: "Manage your events",
+  },
+  {
+    name: "Films",
+    href: "/films",
+    icon: Film,
+    description: "Your film inventory",
   },
   {
     name: "Billing",
     href: "/billing",
     icon: CreditCard,
-    description: "Plans & payments"
-  },
-  {
-    name: "Settings",
-    href: "/settings",
-    icon: Settings,
-    description: "Account settings"
+    description: "Plans & payments",
   },
 ];
+
+interface AvailableFilm {
+  id: string;
+}
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const { data: session } = authClient.useSession();
+
+  // Fetch available film count using SWR for automatic updates
+  const { data: availableFilms } = useSWR<AvailableFilm[]>(
+    session?.user ? "/api/films/available" : null,
+    fetcher,
+  );
+  const filmCount = availableFilms?.length ?? null;
 
   useEffect(() => {
     setMounted(true);
@@ -95,17 +108,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       >
         <div className="flex h-full flex-col">
           {/* Logo */}
-          <div className="flex h-16 items-center gap-3 border-b px-6">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-pink-500 shadow-lg">
-              <Image
-                src="/hires-logo.png"
-                alt="Kodayak Logo"
-                width={24}
-                height={24}
-                className="rounded"
-              />
-            </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-primary to-pink-500 bg-clip-text text-transparent">
+          <div className="flex h-16 items-center gap-0 border-b px-3">
+            <Image
+              loading="eager"
+              src="/hires-logo.png"
+              alt="Kodayak Logo"
+              width={52}
+              height={52}
+              className="rounded w-auto h-auto"
+            />
+            {/* </div> */}
+            <span className="text-xl font-bold bg-linear-to-br from-primary to-pink-500 bg-clip-text text-transparent">
               Kodayak
             </span>
             <button
@@ -127,31 +140,38 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   onClick={() => setSidebarOpen(false)}
                   className={`group flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all duration-200 ${
                     isActive
-                      ? "bg-gradient-to-r from-primary to-pink-500 text-white shadow-lg shadow-primary/25"
+                      ? "bg-linear-to-br from-primary to-pink-500 text-white shadow-lg shadow-primary/25"
                       : "text-muted-foreground hover:bg-muted hover:text-foreground"
                   }`}
                 >
-                  <div className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors ${
-                    isActive
-                      ? "bg-white/20"
-                      : "bg-muted group-hover:bg-background"
-                  }`}>
+                  <div
+                    className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors ${
+                      isActive
+                        ? "bg-white/20"
+                        : "bg-muted group-hover:bg-background"
+                    }`}
+                  >
                     <item.icon className="h-5 w-5" />
                   </div>
                   <div className="flex-1">
                     <p className="font-medium">{item.name}</p>
-                    <p className={`text-xs ${isActive ? "text-white/70" : "text-muted-foreground"}`}>
+                    <p
+                      className={`text-xs ${isActive ? "text-white/70" : "text-muted-foreground"}`}
+                    >
                       {item.description}
                     </p>
                   </div>
-                  <ChevronRight className={`h-4 w-4 opacity-0 -translate-x-2 transition-all ${
-                    isActive ? "opacity-100 translate-x-0" : "group-hover:opacity-50 group-hover:translate-x-0"
-                  }`} />
+                  <ChevronRight
+                    className={`h-4 w-4 opacity-0 -translate-x-2 transition-all ${
+                      isActive
+                        ? "opacity-100 translate-x-0"
+                        : "group-hover:opacity-50 group-hover:translate-x-0"
+                    }`}
+                  />
                 </Link>
               );
             })}
           </nav>
-
         </div>
       </aside>
 
@@ -167,14 +187,25 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </button>
 
           {/* Spacer for desktop */}
-          <div className="hidden lg:block" />
+          <div className="hidden lg:block flex-1" />
+
+          {/* Film count badge */}
+          {mounted && filmCount !== null && (
+            <Link
+              href="/films"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted hover:bg-muted/80 transition-colors mr-2"
+            >
+              <Film className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium">{filmCount}</span>
+            </Link>
+          )}
 
           {/* User dropdown - only render after mount to avoid hydration mismatch */}
           {mounted ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center gap-3 rounded-full p-1.5 pr-4 hover:bg-muted transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-primary to-pink-500 text-white font-semibold text-sm shadow-lg">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-linear-to-br from-primary to-pink-500 text-white font-semibold text-sm shadow-lg">
                     {userInitial}
                   </div>
                   <div className="hidden sm:block text-left">
@@ -187,16 +218,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 <DropdownMenuLabel>
                   <div className="flex flex-col">
                     <span className="font-medium">{userName}</span>
-                    <span className="text-xs text-muted-foreground font-normal">{userEmail}</span>
+                    <span className="text-xs text-muted-foreground font-normal">
+                      {userEmail}
+                    </span>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link href="/settings" className="cursor-pointer">
-                    <User className="mr-2 h-4 w-4" />
-                    Profile
-                  </Link>
-                </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link href="/settings" className="cursor-pointer">
                     <Settings className="mr-2 h-4 w-4" />

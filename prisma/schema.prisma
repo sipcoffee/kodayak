@@ -33,6 +33,20 @@ enum PlanType {
   PREMIUM
 }
 
+enum FilmStatus {
+  AVAILABLE   // Ready to use
+  USED        // Consumed for an event
+  EXPIRED     // Past expiration
+  REFUNDED    // Payment refunded
+}
+
+enum FilmCodeStatus {
+  ACTIVE      // Ready to be redeemed
+  REDEEMED    // Already claimed
+  EXPIRED     // Past expiration
+  REVOKED     // Disabled by admin
+}
+
 // ============ BETTER-AUTH MODELS ============
 
 model User {
@@ -55,6 +69,9 @@ model User {
   accounts      Account[]
   events        Event[]
   payments      Payment[]
+  films         UserFilm[]
+  createdCodes  FilmCode[] @relation("CreatedCodes")
+  redeemedCodes FilmCode[] @relation("RedeemedCodes")
 }
 
 model Session {
@@ -112,12 +129,15 @@ model Plan {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  payments Payment[]
+  payments  Payment[]
+  userFilms UserFilm[]
+  filmCodes FilmCode[]
 }
 
 model Event {
   id              String      @id @default(cuid())
   userId          String
+  userFilmId      String?     @unique
   name            String
   description     String?
   slug            String      @unique
@@ -136,6 +156,7 @@ model Event {
 
   // Relations
   user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userFilm        UserFilm?   @relation(fields: [userFilmId], references: [id])
   photos          Photo[]
   payment         Payment?
 }
@@ -185,4 +206,50 @@ model Payment {
   user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   event           Event?        @relation(fields: [eventId], references: [id], onDelete: SetNull)
   plan            Plan          @relation(fields: [planId], references: [id])
+  userFilm        UserFilm?
+}
+
+model UserFilm {
+  id          String     @id @default(cuid())
+  userId      String
+  planId      String
+  paymentId   String?    @unique  // Nullable for promotional/free films
+  status      FilmStatus @default(AVAILABLE)
+  purchasedAt DateTime   @default(now())
+  usedAt      DateTime?
+  expiresAt   DateTime?  // Optional for promotional films
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  // Relations
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan        Plan       @relation(fields: [planId], references: [id])
+  payment     Payment?   @relation(fields: [paymentId], references: [id])
+  event       Event?     // The event created from this film
+  filmCode    FilmCode?
+
+  @@index([userId, status])
+}
+
+model FilmCode {
+  id           String          @id @default(cuid())
+  code         String          @unique   // KODAYAK-XXXX-XXXX
+  planId       String
+  status       FilmCodeStatus  @default(ACTIVE)
+  createdById  String          // Admin who generated
+  redeemedById String?         // User who redeemed
+  userFilmId   String?         @unique
+  expiresAt    DateTime?
+  redeemedAt   DateTime?
+  revokedAt    DateTime?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  plan        Plan     @relation(fields: [planId], references: [id])
+  createdBy   User     @relation("CreatedCodes", fields: [createdById], references: [id])
+  redeemedBy  User?    @relation("RedeemedCodes", fields: [redeemedById], references: [id])
+  userFilm    UserFilm? @relation(fields: [userFilmId], references: [id])
+
+  @@index([code])
+  @@index([status])
 }

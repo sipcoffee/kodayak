@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import useSWR from "swr";
 import Link from "next/link";
-import { ArrowLeft, Loader2, Save } from "lucide-react";
+import { ArrowLeft, Loader2, Save, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,7 +36,9 @@ interface Event {
 
 export default function EventSettingsPage() {
   const params = useParams();
+  const router = useRouter();
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
@@ -102,6 +104,26 @@ export default function EventSettingsPage() {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDeleteEvent = async () => {
+    if (!event) return;
+    if (!confirm("Are you sure you want to delete this event? This action cannot be undone.")) {
+      return;
+    }
+
+    setDeleting(true);
+    try {
+      const response = await fetch(`/api/events/${event.id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) throw new Error("Failed to delete event");
+      router.push("/events");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete event");
+      setDeleting(false);
     }
   };
 
@@ -315,6 +337,43 @@ export default function EventSettingsPage() {
           </Button>
         </div>
       </form>
+
+      {/* Danger Zone */}
+      <Card className="max-w-2xl border-destructive/50">
+        <CardHeader>
+          <CardTitle className="text-destructive">Danger Zone</CardTitle>
+          <CardDescription>
+            Irreversible actions that affect your event
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <p className="font-medium">Delete Event</p>
+              <p className="text-sm text-muted-foreground">
+                Permanently delete this event and all its photos
+              </p>
+            </div>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteEvent}
+              disabled={deleting}
+            >
+              {deleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete Event
+                </>
+              )}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

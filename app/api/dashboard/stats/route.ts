@@ -12,7 +12,7 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const [events, activeEvents, photos, recentEvents] = await Promise.all([
+  const [events, activeEvents, photos, recentEvents, filmsAvailable] = await Promise.all([
     // Total events count
     prisma.event.count({
       where: { userId: session.user.id },
@@ -36,6 +36,17 @@ export async function GET() {
       orderBy: { createdAt: "desc" },
       take: 5,
     }),
+    // Available films count
+    prisma.userFilm.count({
+      where: {
+        userId: session.user.id,
+        status: "AVAILABLE",
+        OR: [
+          { expiresAt: null },
+          { expiresAt: { gt: new Date() } },
+        ],
+      },
+    }),
   ]);
 
   return NextResponse.json({
@@ -44,5 +55,6 @@ export async function GET() {
     totalPhotos: photos._count,
     storageUsed: photos._sum.size || 0,
     recentEvents,
+    filmsAvailable,
   });
 }

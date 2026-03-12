@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import useSWR from "swr";
 import Link from "next/link";
 import Image from "next/image";
@@ -55,7 +55,6 @@ interface Event {
 
 export default function EventDetailsPage() {
   const params = useParams();
-  const router = useRouter();
   const [selectedPhotos, setSelectedPhotos] = useState<Set<string>>(new Set());
   const [isDeleting, setIsDeleting] = useState(false);
   const [isGifModalOpen, setIsGifModalOpen] = useState(false);
@@ -139,24 +138,6 @@ export default function EventDetailsPage() {
     }
     if (errorCount > 0) {
       toast.error(`Failed to delete ${errorCount} photo${errorCount > 1 ? "s" : ""}`);
-    }
-  };
-
-  const handleDeleteEvent = async () => {
-    if (!event) return;
-    if (!confirm("Are you sure you want to delete this event? This action cannot be undone.")) {
-      return;
-    }
-
-    try {
-      const response = await fetch(`/api/events/${event.id}`, {
-        method: "DELETE",
-      });
-
-      if (!response.ok) throw new Error("Failed to delete event");
-      router.push("/events");
-    } catch (error) {
-      console.error(error);
     }
   };
 
@@ -409,27 +390,6 @@ export default function EventDetailsPage() {
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
-
-      {/* Danger Zone */}
-      <Card className="border-destructive/50">
-        <CardHeader>
-          <CardTitle className="text-destructive">Danger Zone</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium">Delete Event</p>
-              <p className="text-sm text-muted-foreground">
-                Permanently delete this event and all its photos
-              </p>
-            </div>
-            <Button variant="destructive" onClick={handleDeleteEvent}>
-              <Trash2 className="mr-2 h-4 w-4" />
-              Delete Event
-            </Button>
-          </div>
         </CardContent>
       </Card>
 

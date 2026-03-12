@@ -93,6 +93,51 @@
 - [ ] Webhook for payment confirmation
 - [ ] Invoice generation
 
+### Phase 7: Films System (NEW)
+- [x] UserFilm model and FilmStatus enum in Prisma schema
+- [x] Films nav item and badge in header
+- [x] Films inventory page (`/films`)
+- [x] Film purchase page (`/films/purchase`) - mock payment
+- [x] Event creation requires film selection
+- [x] Film consumption on event creation
+- [x] Dashboard stats include film count
+
+---
+
+## Implemented Features Log
+
+### Films System (March 2026)
+Transform plans into "films" that users purchase and consume when creating events.
+
+**Database Changes:**
+- Added `FilmStatus` enum: `AVAILABLE`, `USED`, `EXPIRED`, `REFUNDED`
+- Added `UserFilm` model with relations to User, Plan, Payment, Event
+- Added `userFilmId` field to Event model
+- Added `films` relation to User and `userFilms` to Plan
+
+**API Endpoints:**
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/films` | GET | Get user's film inventory |
+| `/api/films/available` | GET | Get available films for event creation |
+| `/api/films/purchase` | POST | Mock purchase (creates films instantly) |
+| `/api/plans` | GET | Get active plans for users |
+
+**UI Changes:**
+- "Films" nav item in sidebar with film icon
+- Film count badge in header (clickable, links to /films)
+- Films inventory page with available/used films sections
+- Film purchase page with plan selection and quantity
+- Event form now requires film selection (derives photo limit & duration from plan)
+- Alert component added to UI library
+
+**How It Works:**
+1. User purchases films (currently mock - instant creation)
+2. Each film has a plan type (Basic/Standard/Premium)
+3. When creating an event, user selects an available film
+4. Film is consumed and marked as "USED"
+5. Event gets photoLimit and expiresAt from the film's plan
+
 ---
 
 ## Database Schema
@@ -136,6 +181,13 @@ enum PlanType {
   PREMIUM
 }
 
+enum FilmStatus {
+  AVAILABLE   // Ready to use
+  USED        // Consumed for an event
+  EXPIRED     // Past expiration
+  REFUNDED    // Payment refunded
+}
+
 // ============ BETTER-AUTH MODELS ============
 
 model User {
@@ -158,6 +210,7 @@ model User {
   accounts      Account[]
   events        Event[]
   payments      Payment[]
+  films         UserFilm[]
 }
 
 model Session {
@@ -216,12 +269,14 @@ model Plan {
   updatedAt     DateTime @updatedAt
 
   // Relations
-  payments Payment[]
+  payments  Payment[]
+  userFilms UserFilm[]
 }
 
 model Event {
   id           String      @id @default(cuid())
   userId       String
+  userFilmId   String?     @unique  // Film used for this event
   name         String
   description  String?
   slug         String      @unique // For QR code URL
@@ -240,6 +295,7 @@ model Event {
 
   // Relations
   user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userFilm     UserFilm?   @relation(fields: [userFilmId], references: [id])
   photos       Photo[]
   payment      Payment?
 }
@@ -289,6 +345,28 @@ model Payment {
   user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   event           Event?        @relation(fields: [eventId], references: [id], onDelete: SetNull)
   plan            Plan          @relation(fields: [planId], references: [id])
+  userFilm        UserFilm?
+}
+
+model UserFilm {
+  id          String     @id @default(cuid())
+  userId      String
+  planId      String
+  paymentId   String?    @unique  // Nullable for promotional/free films
+  status      FilmStatus @default(AVAILABLE)
+  purchasedAt DateTime   @default(now())
+  usedAt      DateTime?
+  expiresAt   DateTime?  // Optional for promotional films
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  // Relations
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan        Plan       @relation(fields: [planId], references: [id])
+  payment     Payment?   @relation(fields: [paymentId], references: [id])
+  event       Event?     // The event created from this film
+
+  @@index([userId, status])
 }
 ```
 
@@ -332,6 +410,10 @@ kodayak/
 │   │   │           └── page.tsx  # ⬜ QR code page
 │   │   ├── billing/
 │   │   │   └── page.tsx          # ✅ Payment history (skeleton)
+│   │   ├── films/
+│   │   │   ├── page.tsx          # ✅ Films inventory page
+│   │   │   └── purchase/
+│   │   │       └── page.tsx      # ✅ Film purchase page
 │   │   └── settings/
 │   │       └── page.tsx          # ✅ Account settings (skeleton)
 │   │
@@ -368,6 +450,14 @@ kodayak/
 │   │   │       └── route.ts      # ✅ Public event data by slug
 │   │   ├── photos/
 │   │   │   └── route.ts          # ✅ Upload/list photos
+│   │   ├── films/
+│   │   │   ├── route.ts          # ✅ Get user's films
+│   │   │   ├── available/
+│   │   │   │   └── route.ts      # ✅ Get available films
+│   │   │   └── purchase/
+│   │   │       └── route.ts      # ✅ Purchase films (mock)
+│   │   ├── plans/
+│   │   │   └── route.ts          # ✅ Get active plans
 │   │   ├── payments/
 │   │   │   ├── route.ts          # ⬜ Create checkout
 │   │   │   └── webhook/
@@ -380,12 +470,14 @@ kodayak/
 │   └── not-found.tsx             # ⬜ 404 page
 │
 ├── components/
-│   ├── ui/                       # ✅ shadcn/ui components (6 installed)
+│   ├── ui/                       # ✅ shadcn/ui components
+│   │   ├── alert.tsx             # ✅
 │   │   ├── button.tsx            # ✅
 │   │   ├── card.tsx              # ✅
 │   │   ├── form.tsx              # ✅
 │   │   ├── input.tsx             # ✅
 │   │   ├── label.tsx             # ✅
+│   │   ├── select.tsx            # ✅
 │   │   └── separator.tsx         # ✅
 │   ├── marketing/                # ⬜ (inline in pages for now)
 │   ├── dashboard/                # ⬜ (inline in layouts for now)
