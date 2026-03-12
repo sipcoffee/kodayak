@@ -20,6 +20,7 @@ export function PhoneMockup() {
               src="/sample-wed.jpg"
               alt="Wedding photo sample"
               fill
+              sizes="(max-width: 768px) 280px, 320px"
               className="object-cover"
               priority
             />

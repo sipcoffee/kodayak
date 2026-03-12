@@ -98,6 +98,7 @@ export default function LoginForm() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <Image
+            loading="eager"
             src="/hires-logo.png"
             alt="Kodayak Logo"
             width={72}

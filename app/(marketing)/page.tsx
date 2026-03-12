@@ -24,6 +24,8 @@ import {
   Zap,
   Shield,
   ImageIcon,
+  Facebook,
+  Mail,
 } from "lucide-react";
 import { AnimatedBackground } from "@/components/landing/animated-background";
 import {
@@ -619,6 +621,71 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* Footer */}
+      <footer className="py-12 bg-muted/50 border-t">
+        <div className="container px-6 md:px-16">
+          <div className="flex flex-col gap-8">
+            {/* Top row */}
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+              {/* Logo and tagline */}
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-pink-500 flex items-center justify-center">
+                  <Camera className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <span className="font-bold text-lg">Kodayak</span>
+                  <p className="text-xs text-muted-foreground">Capture every moment</p>
+                </div>
+              </div>
+
+              {/* Social Links */}
+              <div className="flex items-center gap-4">
+                <a
+                  href="https://www.facebook.com/profile.php?id=61582372776815"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 px-4 py-2 rounded-full bg-background hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                >
+                  <Facebook className="h-5 w-5" />
+                  <span className="text-sm font-medium">Facebook</span>
+                </a>
+                <a
+                  href="mailto:kodayakph@gmail.com"
+                  className="flex items-center gap-2 px-4 py-2 rounded-full bg-background hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                >
+                  <Mail className="h-5 w-5" />
+                  <span className="text-sm font-medium">Contact</span>
+                </a>
+              </div>
+            </div>
+
+            {/* Bottom row */}
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-6 border-t border-border/50">
+              {/* Copyright */}
+              <p className="text-sm text-muted-foreground">
+                © {new Date().getFullYear()} Kodayak. All rights reserved.
+              </p>
+
+              {/* Legal Links */}
+              <div className="flex items-center gap-6">
+                <Link
+                  href="/privacy"
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Privacy Policy
+                </Link>
+                <Link
+                  href="/terms"
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Terms of Service
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

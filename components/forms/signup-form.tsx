@@ -96,6 +96,7 @@ export default function SignupForm() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <Image
+            loading="eager"
             src="/hires-logo.png"
             alt="Kodayak Logo"
             width={72}
@@ -103,7 +104,9 @@ export default function SignupForm() {
             className="mx-auto mb-4 rounded-xl"
             style={{ width: "auto", height: "auto" }}
           />
-          <CardTitle className="text-2xl font-bold">Create an account</CardTitle>
+          <CardTitle className="text-2xl font-bold">
+            Create an account
+          </CardTitle>
           <CardDescription>
             Start capturing moments from every angle
           </CardDescription>

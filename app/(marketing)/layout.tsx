@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
+import { Facebook, Mail } from "lucide-react";
 
 export default function MarketingLayout({
   children,
@@ -12,16 +13,16 @@ export default function MarketingLayout({
       {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
         <div className="mx-3 md:mx-16 flex h-16 items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
+          <Link href="/" className="flex items-center">
             <Image
+              loading="eager"
               src="/hires-logo.png"
               alt="Kodayak Logo"
-              width={48}
-              height={48}
-              className="rounded-lg"
-              style={{ width: "auto", height: "auto" }}
+              width={52}
+              height={52}
+              className="rounded-lg w-auto h-auto"
             />
-            <span className="text-xl font-bold">Kodayak</span>
+            <span className="text-xl font-bold -mx-2.5">Kodayak</span>
           </Link>
 
           <nav className="hidden md:flex items-center gap-6">
@@ -137,6 +138,26 @@ export default function MarketingLayout({
                   </Link>
                 </li>
               </ul>
+
+              <h4 className="font-semibold mb-4 mt-6">Connect</h4>
+              <div className="flex items-center gap-3">
+                <a
+                  href="https://www.facebook.com/profile.php?id=61582372776815"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-muted hover:bg-muted/80 transition-colors text-muted-foreground hover:text-foreground"
+                  aria-label="Facebook"
+                >
+                  <Facebook className="h-4 w-4" />
+                </a>
+                <a
+                  href="mailto:kodayakph@gmail.com"
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-muted hover:bg-muted/80 transition-colors text-muted-foreground hover:text-foreground"
+                  aria-label="Email"
+                >
+                  <Mail className="h-4 w-4" />
+                </a>
+              </div>
             </div>
           </div>
 
