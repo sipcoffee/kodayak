@@ -1,50 +1,22 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle } from "lucide-react";
+import { CheckCircle, Info } from "lucide-react";
+import { prisma } from "@/lib/prisma";
 
-const plans = [
-  {
-    name: "Basic",
-    price: "₱499",
-    description: "Perfect for small gatherings",
-    features: [
-      "10 photos per guest",
-      "1 day event duration",
-      "7 days gallery access",
-      "Email support",
-    ],
-    cta: "Get Started",
-    popular: false,
-  },
-  {
-    name: "Standard",
-    price: "₱999",
-    description: "Great for medium events",
-    features: [
-      "15 photos per guest",
-      "3 days event duration",
-      "30 days gallery access",
-      "Priority support",
-    ],
-    cta: "Get Started",
-    popular: true,
-  },
-  {
-    name: "Premium",
-    price: "₱1,999",
-    description: "For large celebrations",
-    features: [
-      "25 photos per guest",
-      "7 days event duration",
-      "Forever gallery access",
-      "Dedicated support",
-      "Analytics dashboard",
-    ],
-    cta: "Get Started",
-    popular: false,
-  },
-];
+const planDescriptions: Record<string, string> = {
+  BASIC: "Perfect for small gatherings",
+  STANDARD: "Great for medium events",
+  PREMIUM: "For large celebrations",
+};
+
+async function getPlans() {
+  const plans = await prisma.plan.findMany({
+    where: { isActive: true },
+    orderBy: { price: "asc" },
+  });
+  return plans;
+}
 
 const faqs = [
   {
@@ -79,7 +51,9 @@ const faqs = [
   },
 ];
 
-export default function PricingPage() {
+export default async function PricingPage() {
+  const plans = await getPlans();
+
   return (
     <div>
       {/* Header */}
@@ -100,51 +74,65 @@ export default function PricingPage() {
       <section className="py-24">
         <div className="container">
           <div className="grid gap-8 md:grid-cols-3 max-w-5xl mx-auto">
-            {plans.map((plan) => (
-              <Card
-                key={plan.name}
-                className={`relative ${
-                  plan.popular ? "border-primary shadow-lg scale-105" : ""
-                }`}
-              >
-                {plan.popular && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <span className="bg-primary text-primary-foreground text-xs font-medium px-3 py-1 rounded-full">
-                      Most Popular
-                    </span>
-                  </div>
-                )}
-                <CardHeader className="text-center pb-2">
-                  <CardTitle className="text-xl">{plan.name}</CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    {plan.description}
-                  </p>
-                </CardHeader>
-                <CardContent className="text-center">
-                  <div className="mb-6">
-                    <span className="text-4xl font-bold">{plan.price}</span>
-                    <span className="text-muted-foreground"> / event</span>
-                  </div>
+            {plans.map((plan) => {
+              const isPopular = plan.type === "STANDARD";
+              const price = Number(plan.price).toLocaleString();
 
-                  <ul className="space-y-3 mb-6 text-left">
-                    {plan.features.map((feature) => (
-                      <li key={feature} className="flex items-start gap-2">
-                        <CheckCircle className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                        <span className="text-sm">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
+              return (
+                <Card
+                  key={plan.id}
+                  className={`relative ${
+                    isPopular ? "border-primary shadow-lg scale-105" : ""
+                  }`}
+                >
+                  {isPopular && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                      <span className="bg-primary text-primary-foreground text-xs font-medium px-3 py-1 rounded-full">
+                        Most Popular
+                      </span>
+                    </div>
+                  )}
+                  <CardHeader className="text-center pb-2">
+                    <CardTitle className="text-xl">{plan.name}</CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      {planDescriptions[plan.type] || "For your events"}
+                    </p>
+                  </CardHeader>
+                  <CardContent className="text-center">
+                    <div className="mb-6">
+                      <span className="text-4xl font-bold">₱{price}</span>
+                      <span className="text-muted-foreground"> / event</span>
+                    </div>
 
-                  <Button
-                    className="w-full"
-                    variant={plan.popular ? "default" : "outline"}
-                    asChild
-                  >
-                    <Link href="/signup">{plan.cta}</Link>
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
+                    <ul className="space-y-3 mb-4 text-left">
+                      {plan.features.map((feature) => (
+                        <li key={feature} className="flex items-start gap-2">
+                          <CheckCircle className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                          <span className="text-sm">{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+
+                    <div className="mb-6 rounded-lg bg-muted/50 p-3 text-left">
+                      <div className="flex items-start gap-2">
+                        <Info className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                        <p className="text-xs text-muted-foreground">
+                          Photos per guest limit means your total event photos grow with your guest count — no limit on attendees!
+                        </p>
+                      </div>
+                    </div>
+
+                    <Button
+                      className="w-full"
+                      variant={isPopular ? "default" : "outline"}
+                      asChild
+                    >
+                      <Link href="/signup">Get Started</Link>
+                    </Button>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         </div>
       </section>
