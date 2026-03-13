@@ -25,7 +25,7 @@ export default function CameraLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="h-screen w-screen overflow-hidden bg-black">
+    <div className="min-h-screen w-screen bg-black">
       <PWAHead
         manifest="/camera-manifest.json"
         serviceWorker="/camera-sw.js"
