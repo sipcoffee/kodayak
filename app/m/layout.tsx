@@ -2,34 +2,34 @@ import type { Metadata, Viewport } from "next";
 import { PWAHead } from "@/components/pwa/pwa-head";
 
 export const metadata: Metadata = {
-  title: "Kodayak Camera",
-  description: "Capture moments at this event",
+  title: "Kodayak Manager",
+  description: "Manage your events and track shots remaining",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "black-translucent",
+    statusBarStyle: "default",
     title: "Kodayak",
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#000000",
+  themeColor: "#E91E63",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
 };
 
-export default function CameraLayout({
+export default function MobileAppLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <div className="h-screen w-screen overflow-hidden bg-black">
+    <div className="min-h-screen bg-background">
       <PWAHead
-        manifest="/camera-manifest.json"
-        serviceWorker="/camera-sw.js"
-        themeColor="#000000"
+        manifest="/app-manifest.json"
+        serviceWorker="/app-sw.js"
+        themeColor="#E91E63"
       />
       {children}
     </div>
