@@ -71,7 +71,7 @@ export async function PATCH(
       name: body.name,
       description: body.description,
       status: body.status,
-      photoLimit: body.photoLimit ? parseInt(body.photoLimit) : undefined,
+      guestPhotoLimit: body.guestPhotoLimit ? parseInt(body.guestPhotoLimit) : undefined,
       expiresAt: body.expiresAt ? new Date(body.expiresAt) : undefined,
       isGalleryPublic: body.isGalleryPublic,
     },

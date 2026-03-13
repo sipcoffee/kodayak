@@ -17,7 +17,7 @@ interface Plan {
   name: string;
   type: "BASIC" | "STANDARD" | "PREMIUM";
   price: string;
-  photoLimit: number;
+  guestPhotoLimit: number;
   eventDuration: number;
   features: string[];
   isActive: boolean;
@@ -51,7 +51,7 @@ export default function AdminPlansPage() {
     setEditForm({
       name: plan.name,
       price: plan.price,
-      photoLimit: plan.photoLimit,
+      guestPhotoLimit: plan.guestPhotoLimit,
       eventDuration: plan.eventDuration,
       isActive: plan.isActive,
     });
@@ -160,15 +160,15 @@ export default function AdminPlansPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor={`photoLimit-${plan.id}`}>Photo Limit</Label>
+                    <Label htmlFor={`guestPhotoLimit-${plan.id}`}>Guest Photo Limit</Label>
                     <Input
-                      id={`photoLimit-${plan.id}`}
+                      id={`guestPhotoLimit-${plan.id}`}
                       type="number"
-                      value={editForm.photoLimit || ""}
+                      value={editForm.guestPhotoLimit || ""}
                       onChange={(e) =>
                         setEditForm({
                           ...editForm,
-                          photoLimit: parseInt(e.target.value),
+                          guestPhotoLimit: parseInt(e.target.value),
                         })
                       }
                     />
@@ -214,7 +214,7 @@ export default function AdminPlansPage() {
                   <div className="space-y-2">
                     <div className="flex items-center gap-2 text-sm">
                       <Check className="h-4 w-4 text-green-500" />
-                      <span>{plan.photoLimit} photos</span>
+                      <span>{plan.guestPhotoLimit} photos per guest</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <Check className="h-4 w-4 text-green-500" />

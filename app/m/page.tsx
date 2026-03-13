@@ -28,7 +28,7 @@ interface Event {
   name: string;
   slug: string;
   status: "DRAFT" | "ACTIVE" | "PAUSED" | "EXPIRED" | "COMPLETED";
-  photoLimit: number;
+  guestPhotoLimit: number;
   expiresAt: string;
   _count: { photos: number };
 }
@@ -37,7 +37,7 @@ interface AvailableFilm {
   id: string;
   plan: {
     name: string;
-    photoLimit: number;
+    guestPhotoLimit: number;
   };
 }
 
@@ -124,7 +124,7 @@ export default function MobileDashboardPage() {
   }
 
   const activeEvents = events?.filter((e) => e.status === "ACTIVE") || [];
-  const totalShots = films?.reduce((acc, f) => acc + f.plan.photoLimit, 0) || 0;
+  const totalGuestLimit = films?.reduce((acc, f) => acc + f.plan.guestPhotoLimit, 0) || 0;
 
   return (
     <div className="flex flex-col min-h-screen pb-safe">
@@ -186,7 +186,7 @@ export default function MobileDashboardPage() {
                 </div>
                 <p className="text-4xl font-bold">{films?.length || 0}</p>
                 <p className="text-sm text-white/70 mt-1">
-                  {totalShots.toLocaleString()} total shots
+                  {totalGuestLimit} photos/guest each
                 </p>
               </div>
               <Link href="/films/purchase">
@@ -321,7 +321,7 @@ export default function MobileDashboardPage() {
                         <div className="flex items-center gap-3 text-xs text-muted-foreground">
                           <span className="flex items-center gap-1">
                             <Images className="h-3 w-3" />
-                            {event._count.photos}/{event.photoLimit}
+                            {event._count.photos} photos
                           </span>
                           <span className="flex items-center gap-1">
                             <Clock className="h-3 w-3" />
@@ -331,18 +331,10 @@ export default function MobileDashboardPage() {
                       </div>
                     </div>
 
-                    {/* Progress bar */}
+                    {/* Info */}
                     <div className="mb-3">
-                      <div className="h-2 bg-muted rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-primary to-pink-500 rounded-full transition-all"
-                          style={{
-                            width: `${Math.min((event._count.photos / event.photoLimit) * 100, 100)}%`,
-                          }}
-                        />
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {event.photoLimit - event._count.photos} shots remaining
+                      <p className="text-xs text-muted-foreground">
+                        {event.guestPhotoLimit} photos per guest limit
                       </p>
                     </div>
 

@@ -2,9 +2,10 @@
 
 import { useParams, useRouter } from "next/navigation";
 import useSWR from "swr";
-import { Camera, Images, AlertCircle, Loader2, Sparkles, ChevronRight, Aperture } from "lucide-react";
+import { Camera, Images, AlertCircle, Sparkles, ChevronRight, Aperture } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLocalPhotos } from "@/hooks/use-local-photos";
+import { useGuestStatus } from "@/hooks/use-guest-status";
 import { fetcher } from "@/lib/swr";
 
 interface EventData {
@@ -15,8 +16,8 @@ interface EventData {
   welcomeMessage: string | null;
   primaryColor: string | null;
   status: string;
-  photoLimit: number;
-  photoCount: number;
+  guestPhotoLimit: number;
+  totalPhotoCount: number;
   isGalleryPublic: boolean;
   expiresAt: string;
 }
@@ -36,6 +37,7 @@ export default function EventDashboard() {
   );
 
   const { photos: localPhotos } = useLocalPhotos(event?.id || "");
+  const { status: guestStatus } = useGuestStatus(slug);
 
   // Loading state
   if (isLoading) {
@@ -83,10 +85,12 @@ export default function EventDashboard() {
   }
 
   const primaryColor = event.primaryColor || "#E91E63";
-  const shotsRemaining = Math.max(0, event.photoLimit - event.photoCount);
+  // Use real guest status data
+  const guestUploaded = guestStatus?.uploadedCount ?? 0;
+  const shotsRemaining = guestStatus?.remaining ?? event.guestPhotoLimit;
   const isEventActive = event.status === "ACTIVE";
-  const hasReachedLimit = event.photoCount >= event.photoLimit;
-  const progressPercentage = (event.photoCount / event.photoLimit) * 100;
+  const hasReachedLimit = guestStatus?.hasReachedLimit ?? false;
+  const progressPercentage = (guestUploaded / event.guestPhotoLimit) * 100;
 
   return (
     <div className="relative flex min-h-[100dvh] flex-col overflow-hidden bg-gradient-to-br from-gray-900 via-black to-gray-900 text-white">
@@ -170,13 +174,13 @@ export default function EventDashboard() {
             {/* Stats row */}
             <div className="flex justify-center gap-8 text-center">
               <div>
-                <p className="text-2xl font-bold">{event.photoCount}</p>
-                <p className="text-xs text-gray-400">Uploaded</p>
+                <p className="text-2xl font-bold">{guestUploaded}</p>
+                <p className="text-xs text-gray-400">Your Uploads</p>
               </div>
               <div className="w-px bg-white/10" />
               <div>
-                <p className="text-2xl font-bold">{event.photoLimit}</p>
-                <p className="text-xs text-gray-400">Total Limit</p>
+                <p className="text-2xl font-bold">{event.guestPhotoLimit}</p>
+                <p className="text-xs text-gray-400">Your Limit</p>
               </div>
             </div>
 

@@ -25,7 +25,7 @@ interface Event {
   slug: string;
   description: string | null;
   status: "DRAFT" | "ACTIVE" | "PAUSED" | "EXPIRED" | "COMPLETED";
-  photoLimit: number;
+  guestPhotoLimit: number;
   expiresAt: string;
   isGalleryPublic: boolean;
   primaryColor: string | null;
@@ -103,8 +103,9 @@ export default function MobileEventDetailsPage() {
     return null;
   }
 
-  const shotsRemaining = event.photoLimit - event._count.photos;
-  const progress = (event._count.photos / event.photoLimit) * 100;
+  // Note: With Camera Flow V2, there's no total event limit
+  // We show total photos and the per-guest limit
+  const totalPhotos = event._count.photos;
 
   return (
     <div className="flex flex-col min-h-screen pb-safe">
@@ -129,30 +130,24 @@ export default function MobileEventDetailsPage() {
       </header>
 
       <main className="flex-1 p-4 space-y-4">
-        {/* Shots Remaining Card */}
+        {/* Total Photos Card */}
         <Card className="overflow-hidden border-0 shadow-lg bg-gradient-to-br from-primary via-pink-500 to-rose-500 text-white">
           <CardContent className="p-5">
             <div className="flex items-center gap-2 mb-2">
               <Camera className="h-5 w-5" />
               <span className="text-sm font-medium text-white/80">
-                Shots Remaining
+                Total Photos
               </span>
             </div>
-            <p className="text-5xl font-bold">{shotsRemaining}</p>
+            <p className="text-5xl font-bold">{totalPhotos}</p>
             <p className="text-sm text-white/70 mt-1">
-              of {event.photoLimit} total
+              captured by all guests
             </p>
 
-            {/* Progress bar */}
-            <div className="mt-4">
-              <div className="h-2 bg-white/20 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-white rounded-full transition-all"
-                  style={{ width: `${Math.min(progress, 100)}%` }}
-                />
-              </div>
-              <p className="text-xs text-white/70 mt-2">
-                {event._count.photos} photos captured
+            {/* Guest limit info */}
+            <div className="mt-4 pt-4 border-t border-white/20">
+              <p className="text-sm text-white/80">
+                Each guest can upload up to <span className="font-bold">{event.guestPhotoLimit}</span> photos
               </p>
             </div>
           </CardContent>
@@ -168,10 +163,12 @@ export default function MobileEventDetailsPage() {
               </Badge>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Photos</span>
-              <span className="font-medium">
-                {event._count.photos} / {event.photoLimit}
-              </span>
+              <span className="text-sm text-muted-foreground">Total Photos</span>
+              <span className="font-medium">{event._count.photos}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Per Guest Limit</span>
+              <span className="font-medium">{event.guestPhotoLimit}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground flex items-center gap-1">

@@ -147,3 +147,33 @@ export function getOrCreateGuestId(): string {
 
   return guestId;
 }
+
+/**
+ * Get the guest nickname for a specific event
+ */
+export function getGuestNickname(eventId: string): string | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+  return localStorage.getItem(`kodayak-nickname-${eventId}`);
+}
+
+/**
+ * Set the guest nickname for a specific event
+ */
+export function setGuestNickname(eventId: string, nickname: string): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+  localStorage.setItem(`kodayak-nickname-${eventId}`, nickname);
+}
+
+/**
+ * Get or create guest session for an event (includes both ID and nickname if set)
+ */
+export function getGuestSession(eventId: string): { guestId: string; nickname: string | null } {
+  return {
+    guestId: getOrCreateGuestId(),
+    nickname: getGuestNickname(eventId),
+  };
+}

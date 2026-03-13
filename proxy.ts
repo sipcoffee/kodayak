@@ -65,10 +65,13 @@ export async function proxy(request: NextRequest) {
     // Redirect authenticated users away from auth pages based on role
     if (isAuthRoute) {
       const role = await getSessionRole(request);
+      // Only redirect if session is actually valid
       if (role === "ADMIN") {
         return NextResponse.redirect(new URL(`${origin}/admin`, request.url));
+      } else if (role === "CLIENT") {
+        return NextResponse.redirect(new URL(`${origin}/dashboard`, request.url));
       }
-      return NextResponse.redirect(new URL(`${origin}/dashboard`, request.url));
+      // If role is null, session is invalid - let them through to login page
     }
 
     // Check role-based access for protected routes

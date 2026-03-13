@@ -43,7 +43,7 @@ interface Plan {
   id: string;
   name: string;
   type: "BASIC" | "STANDARD" | "PREMIUM";
-  photoLimit: number;
+  guestPhotoLimit: number;
   eventDuration: number;
 }
 
@@ -65,7 +65,7 @@ const createEventSchema = z.object({
 const editEventSchema = z.object({
   name: z.string().min(2, "Event name must be at least 2 characters"),
   description: z.string().optional(),
-  photoLimit: z.string().min(1, "Photo limit is required"),
+  guestPhotoLimit: z.string().min(1, "Guest photo limit is required"),
   expiresAt: z.string().min(1, "Expiry date is required"),
   isGalleryPublic: z.boolean(),
   primaryColor: z.string(),
@@ -112,7 +112,7 @@ export default function EventForm({ initialData, mode = "create", preselectedFil
       : {
           name: initialData?.name || "",
           description: initialData?.description || "",
-          photoLimit: initialData?.photoLimit || "100",
+          guestPhotoLimit: initialData?.guestPhotoLimit || "10",
           expiresAt: initialData?.expiresAt || defaultExpiry.toISOString().split("T")[0],
           isGalleryPublic: initialData?.isGalleryPublic || false,
           primaryColor: initialData?.primaryColor || "#E91E63",
@@ -250,7 +250,7 @@ export default function EventForm({ initialData, mode = "create", preselectedFil
                                 <Film className="h-4 w-4 text-primary" />
                                 <span>{selectedFilm.plan.name}</span>
                                 <span className="text-muted-foreground">
-                                  ({selectedFilm.plan.photoLimit} photos, {selectedFilm.plan.eventDuration} days)
+                                  ({selectedFilm.plan.guestPhotoLimit} photos/guest, {selectedFilm.plan.eventDuration} days)
                                 </span>
                               </div>
                             )}
@@ -264,7 +264,7 @@ export default function EventForm({ initialData, mode = "create", preselectedFil
                               <Film className="h-4 w-4 text-primary" />
                               <span className="font-medium">{film.plan.name}</span>
                               <span className="text-muted-foreground text-sm">
-                                ({film.plan.photoLimit} photos, {film.plan.eventDuration} days)
+                                ({film.plan.guestPhotoLimit} photos/guest, {film.plan.eventDuration} days)
                               </span>
                             </div>
                           </SelectItem>
@@ -286,8 +286,8 @@ export default function EventForm({ initialData, mode = "create", preselectedFil
                 <Film className="h-4 w-4" />
                 <AlertTitle>Using {selectedFilm.plan.name} Film</AlertTitle>
                 <AlertDescription>
-                  This event will allow up to <strong>{selectedFilm.plan.photoLimit} photos</strong> and
-                  will be active for <strong>{selectedFilm.plan.eventDuration} days</strong> from creation.
+                  Each guest can upload up to <strong>{selectedFilm.plan.guestPhotoLimit} photos</strong> and
+                  the event will be active for <strong>{selectedFilm.plan.eventDuration} days</strong> from creation.
                 </AlertDescription>
               </Alert>
             )}
@@ -332,15 +332,15 @@ export default function EventForm({ initialData, mode = "create", preselectedFil
               <div className="grid gap-4 sm:grid-cols-2">
                 <FormField
                   control={form.control}
-                  name={"photoLimit" as keyof EventValues}
+                  name={"guestPhotoLimit" as keyof EventValues}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Photo Limit *</FormLabel>
+                      <FormLabel>Guest Photo Limit *</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
                           min="1"
-                          max="10000"
+                          max="100"
                           value={field.value as string}
                           onChange={field.onChange}
                           onBlur={field.onBlur}
@@ -349,7 +349,7 @@ export default function EventForm({ initialData, mode = "create", preselectedFil
                         />
                       </FormControl>
                       <FormDescription>
-                        Maximum photos for this event
+                        Max photos each guest can upload
                       </FormDescription>
                       <FormMessage />
                     </FormItem>

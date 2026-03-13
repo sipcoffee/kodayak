@@ -19,7 +19,7 @@ export async function GET(
         welcomeMessage: true,
         primaryColor: true,
         status: true,
-        photoLimit: true,
+        guestPhotoLimit: true,
         isGalleryPublic: true,
         expiresAt: true,
         _count: {
@@ -53,8 +53,8 @@ export async function GET(
       welcomeMessage: event.welcomeMessage,
       primaryColor: event.primaryColor,
       status: event.status,
-      photoLimit: event.photoLimit,
-      photoCount: event._count.photos,
+      guestPhotoLimit: event.guestPhotoLimit,
+      totalPhotoCount: event._count.photos,
       isGalleryPublic: event.isGalleryPublic,
       expiresAt: event.expiresAt.toISOString(),
     });

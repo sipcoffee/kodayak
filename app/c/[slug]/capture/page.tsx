@@ -1,13 +1,14 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import useSWR from "swr";
-import { Camera, Images, AlertCircle, Aperture, ArrowLeft, Sparkles } from "lucide-react";
+import { Camera, Images, AlertCircle, Aperture, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { CameraCapture } from "@/components/camera/camera-capture";
+import { GuestRegistration } from "@/components/camera/guest-registration";
 import { Button } from "@/components/ui/button";
-import { compressImage, getOrCreateGuestId, getImageDimensions, blobToDataURL } from "@/lib/image-utils";
+import { compressImage, getOrCreateGuestId, getImageDimensions, blobToDataURL, getGuestNickname } from "@/lib/image-utils";
 import { useLocalPhotos } from "@/hooks/use-local-photos";
 import { fetcher } from "@/lib/swr";
 
@@ -19,8 +20,8 @@ interface EventData {
   welcomeMessage: string | null;
   primaryColor: string | null;
   status: string;
-  photoLimit: number;
-  photoCount: number;
+  guestPhotoLimit: number;
+  totalPhotoCount: number;
   isGalleryPublic: boolean;
   expiresAt: string;
 }
@@ -29,6 +30,9 @@ export default function CapturePage() {
   const params = useParams();
   const router = useRouter();
   const slug = params.slug as string;
+
+  const [guestNickname, setGuestNickname] = useState<string | null>(null);
+  const [isCheckingNickname, setIsCheckingNickname] = useState(true);
 
   const { data: event, error, isLoading } = useSWR<EventData>(
     `/api/c/${slug}`,
@@ -40,6 +44,15 @@ export default function CapturePage() {
   );
 
   const { photos: localPhotos, addPhoto } = useLocalPhotos(event?.id || "");
+
+  // Check for existing nickname when event loads
+  useEffect(() => {
+    if (event?.id) {
+      const savedNickname = getGuestNickname(event.id);
+      setGuestNickname(savedNickname);
+      setIsCheckingNickname(false);
+    }
+  }, [event?.id]);
 
   const handleCapture = useCallback(async (blob: Blob) => {
     if (!event) return;
@@ -59,12 +72,13 @@ export default function CapturePage() {
       // Convert to data URL for preview
       const dataUrl = await blobToDataURL(compressedBlob);
 
-      // Store locally
+      // Store locally with guest name
       await addPhoto({
         eventId: event.id,
         blob: compressedBlob,
         dataUrl,
         guestId: getOrCreateGuestId(),
+        guestName: guestNickname || undefined,
         width: dimensions.width,
         height: dimensions.height,
       });
@@ -74,12 +88,16 @@ export default function CapturePage() {
       console.error("Capture error:", error);
       toast.error("Failed to save photo");
     }
-  }, [event, addPhoto]);
+  }, [event, addPhoto, guestNickname]);
+
+  const handleRegistrationComplete = (nickname: string) => {
+    setGuestNickname(nickname);
+  };
 
   const primaryColor = event?.primaryColor || "#E91E63";
 
   // Loading state
-  if (isLoading) {
+  if (isLoading || isCheckingNickname) {
     return (
       <div className="flex h-screen items-center justify-center bg-gradient-to-br from-gray-900 via-black to-gray-900">
         <div className="flex flex-col items-center gap-4">
@@ -156,29 +174,20 @@ export default function CapturePage() {
     );
   }
 
-  // Event at photo limit
-  if (event.photoCount >= event.photoLimit) {
+  // Note: With the new Camera Flow V2, guests can capture unlimited photos locally
+  // The limit only applies when uploading. This check will be updated in Phase 5
+  // when we implement guest-specific upload tracking.
+
+  // Show registration if no nickname is set
+  if (!guestNickname) {
     return (
-      <div className="flex h-screen flex-col items-center justify-center bg-gradient-to-br from-gray-900 via-black to-gray-900 p-6 text-center">
-        <div className="relative mb-6">
-          <div className="absolute inset-0 rounded-full bg-amber-500/20 blur-xl" />
-          <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-amber-500/20 to-orange-600/20 backdrop-blur-sm">
-            <Sparkles className="h-10 w-10 text-amber-400" />
-          </div>
-        </div>
-        <h1 className="mb-2 text-2xl font-bold text-white">{event.name}</h1>
-        <p className="mb-8 max-w-xs text-gray-400">
-          This event has reached its photo limit. Check out all the amazing photos in the gallery!
-        </p>
-        <Button
-          onClick={() => router.push(`/c/${slug}/gallery`)}
-          className="rounded-full px-6"
-          style={{ backgroundColor: primaryColor }}
-        >
-          <Images className="mr-2 h-4 w-4" />
-          View Gallery
-        </Button>
-      </div>
+      <GuestRegistration
+        eventId={event.id}
+        eventName={event.name}
+        welcomeMessage={event.welcomeMessage}
+        primaryColor={primaryColor}
+        onComplete={handleRegistrationComplete}
+      />
     );
   }
 
@@ -201,24 +210,22 @@ export default function CapturePage() {
           </div>
         </div>
 
-        {/* Photo counter pill */}
+        {/* Photo counter pill - shows local photos saved */}
         <div className="mt-3 ml-13 flex items-center gap-2">
-          <div className="inline-flex items-center gap-2 rounded-full bg-white/10 backdrop-blur-sm px-3 py-1.5 text-sm">
-            <Camera className="h-3.5 w-3.5 text-white/70" />
-            <span className="text-white">
-              <span className="font-semibold">{event.photoCount}</span>
-              <span className="text-white/60"> / {event.photoLimit}</span>
-            </span>
-          </div>
           {localPhotos.length > 0 && (
             <div
               className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium"
               style={{ backgroundColor: primaryColor }}
             >
-              <div className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
-              {localPhotos.length} pending
+              <Camera className="h-3.5 w-3.5" />
+              {localPhotos.length} photo{localPhotos.length !== 1 ? "s" : ""} saved
             </div>
           )}
+          <div className="inline-flex items-center gap-2 rounded-full bg-white/10 backdrop-blur-sm px-3 py-1.5 text-sm">
+            <span className="text-white/70">
+              Upload limit: <span className="text-white font-medium">{event.guestPhotoLimit}</span>
+            </span>
+          </div>
         </div>
       </div>
 

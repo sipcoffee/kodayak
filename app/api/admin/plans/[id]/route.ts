@@ -28,7 +28,7 @@ export async function PATCH(
     data: {
       name: body.name,
       price: body.price ? parseFloat(body.price) : undefined,
-      photoLimit: body.photoLimit ? parseInt(body.photoLimit) : undefined,
+      guestPhotoLimit: body.guestPhotoLimit ? parseInt(body.guestPhotoLimit) : undefined,
       eventDuration: body.eventDuration ? parseInt(body.eventDuration) : undefined,
       features: body.features,
       isActive: body.isActive,

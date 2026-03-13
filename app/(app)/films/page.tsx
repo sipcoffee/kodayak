@@ -38,7 +38,7 @@ interface Plan {
   id: string;
   name: string;
   type: "BASIC" | "STANDARD" | "PREMIUM";
-  photoLimit: number;
+  guestPhotoLimit: number;
   eventDuration: number;
   features: string[];
 }
@@ -288,8 +288,8 @@ export default function FilmsPage() {
                             <div className="flex items-center gap-2">
                               <Images className="h-5 w-5 text-primary" />
                               <div>
-                                <p className="font-medium">{film.plan.photoLimit}</p>
-                                <p className="text-xs text-muted-foreground">Photos</p>
+                                <p className="font-medium">{film.plan.guestPhotoLimit}</p>
+                                <p className="text-xs text-muted-foreground">Per Guest</p>
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
@@ -321,7 +321,7 @@ export default function FilmsPage() {
                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <Images className="h-4 w-4" />
-                        {film.plan.photoLimit} photos
+                        {film.plan.guestPhotoLimit}/guest
                       </span>
                       <span className="flex items-center gap-1">
                         <Clock className="h-4 w-4" />

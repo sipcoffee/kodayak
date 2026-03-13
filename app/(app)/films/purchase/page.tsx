@@ -24,7 +24,7 @@ interface Plan {
   name: string;
   type: "BASIC" | "STANDARD" | "PREMIUM";
   price: string;
-  photoLimit: number;
+  guestPhotoLimit: number;
   eventDuration: number;
   features: string[];
   isActive: boolean;
@@ -128,7 +128,7 @@ export default function FilmPurchasePage() {
                 <CardDescription className="flex items-center justify-center gap-4 mt-2">
                   <span className="flex items-center gap-1">
                     <Images className="h-4 w-4" />
-                    {plan.photoLimit} photos
+                    {plan.guestPhotoLimit} photos/guest
                   </span>
                   <span className="flex items-center gap-1">
                     <Clock className="h-4 w-4" />

@@ -57,3 +57,4 @@ public/uploads
 .claude/settings.local.json
 
 scripts/*
+docs/*

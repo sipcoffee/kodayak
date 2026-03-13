@@ -14,7 +14,7 @@ interface Event {
   description: string | null;
   slug: string;
   status: "DRAFT" | "ACTIVE" | "PAUSED" | "EXPIRED" | "COMPLETED";
-  photoLimit: number;
+  guestPhotoLimit: number;
   expiresAt: string;
   createdAt: string;
   _count: {
@@ -101,7 +101,7 @@ export default function EventsPage() {
                     <div className="flex items-center gap-1">
                       <Images className="h-4 w-4" />
                       <span>
-                        {event._count.photos} / {event.photoLimit}
+                        {event._count.photos} photos ({event.guestPhotoLimit}/guest)
                       </span>
                     </div>
                     <div className="flex items-center gap-1">

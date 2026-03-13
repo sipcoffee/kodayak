@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
         name,
         description,
         slug,
-        photoLimit: film.plan.photoLimit,
+        guestPhotoLimit: film.plan.guestPhotoLimit,
         expiresAt,
         isGalleryPublic: isGalleryPublic ?? false,
         primaryColor: primaryColor || "#E91E63",

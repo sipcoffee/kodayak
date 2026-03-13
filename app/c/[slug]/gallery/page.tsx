@@ -3,10 +3,11 @@
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import useSWR from "swr";
-import { Camera, Download, ArrowLeft, Loader2, AlertCircle, X, Upload, Trash2, CloudUpload } from "lucide-react";
+import { Camera, Download, ArrowLeft, Loader2, AlertCircle, X, Upload, Trash2, CloudUpload, Check, Save } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useLocalPhotos, LocalPhoto } from "@/hooks/use-local-photos";
+import { useGuestStatus } from "@/hooks/use-guest-status";
 import { fetcher } from "@/lib/swr";
 
 interface Photo {
@@ -25,6 +26,7 @@ interface EventData {
   slug: string;
   primaryColor: string | null;
   isGalleryPublic: boolean;
+  guestPhotoLimit: number;
 }
 
 interface PhotosResponse {
@@ -37,6 +39,8 @@ export default function GalleryPage() {
   const slug = params.slug as string;
 
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | LocalPhoto | null>(null);
+  const [selectedForUpload, setSelectedForUpload] = useState<Set<string>>(new Set());
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
 
@@ -58,6 +62,9 @@ export default function GalleryPage() {
     isLoading: localPhotosLoading,
   } = useLocalPhotos(event?.id || "");
 
+  // Guest status for upload tracking
+  const { status: guestStatus, mutate: mutateGuestStatus } = useGuestStatus(slug);
+
   // Fetch uploaded photos
   const {
     data: photosData,
@@ -75,18 +82,61 @@ export default function GalleryPage() {
   const uploadedPhotos = photosData?.photos ?? [];
   const isLoading = eventLoading || localPhotosLoading || (event?.isGalleryPublic && photosLoading);
 
-  const handleUploadAll = async () => {
-    if (localPhotos.length === 0) return;
+  const remainingUploads = guestStatus?.remaining ?? event?.guestPhotoLimit ?? 0;
+  const hasReachedLimit = guestStatus?.hasReachedLimit ?? false;
+
+  // Toggle photo selection
+  const togglePhotoSelection = (photoId: string) => {
+    const newSelection = new Set(selectedForUpload);
+    if (newSelection.has(photoId)) {
+      newSelection.delete(photoId);
+    } else {
+      // Check if adding this would exceed limit
+      if (newSelection.size >= remainingUploads) {
+        toast.error(`You can only upload ${remainingUploads} more photo${remainingUploads !== 1 ? "s" : ""}`);
+        return;
+      }
+      newSelection.add(photoId);
+    }
+    setSelectedForUpload(newSelection);
+  };
+
+  // Select all (up to limit)
+  const selectAll = () => {
+    const maxToSelect = Math.min(localPhotos.length, remainingUploads);
+    const newSelection = new Set(localPhotos.slice(0, maxToSelect).map((p) => p.id));
+    setSelectedForUpload(newSelection);
+    if (localPhotos.length > remainingUploads) {
+      toast.info(`Selected ${maxToSelect} photos (your upload limit)`);
+    }
+  };
+
+  // Deselect all
+  const deselectAll = () => {
+    setSelectedForUpload(new Set());
+  };
+
+  const handleUploadSelected = async () => {
+    if (selectedForUpload.size === 0) return;
+
+    const photosToUpload = localPhotos.filter((p) => selectedForUpload.has(p.id));
+    if (photosToUpload.length === 0) return;
+
+    // Check upload limit
+    if (photosToUpload.length > remainingUploads) {
+      toast.error(`You can only upload ${remainingUploads} more photo${remainingUploads !== 1 ? "s" : ""}`);
+      return;
+    }
 
     setIsUploading(true);
-    setUploadProgress({ current: 0, total: localPhotos.length });
+    setUploadProgress({ current: 0, total: photosToUpload.length });
 
     let successCount = 0;
     let errorCount = 0;
 
-    for (let i = 0; i < localPhotos.length; i++) {
-      const photo = localPhotos[i];
-      setUploadProgress({ current: i + 1, total: localPhotos.length });
+    for (let i = 0; i < photosToUpload.length; i++) {
+      const photo = photosToUpload[i];
+      setUploadProgress({ current: i + 1, total: photosToUpload.length });
 
       try {
         const formData = new FormData();
@@ -106,6 +156,11 @@ export default function GalleryPage() {
           await removePhoto(photo.id);
           successCount++;
         } else {
+          const data = await response.json();
+          if (data.error?.includes("upload limit")) {
+            toast.error(data.error);
+            break;
+          }
           errorCount++;
         }
       } catch {
@@ -114,7 +169,10 @@ export default function GalleryPage() {
     }
 
     setIsUploading(false);
+    setSelectedForUpload(new Set());
+    setIsSelectionMode(false);
     mutatePhotos();
+    mutateGuestStatus();
 
     if (successCount > 0) {
       toast.success(`Uploaded ${successCount} photo${successCount > 1 ? "s" : ""}`);
@@ -122,6 +180,31 @@ export default function GalleryPage() {
     if (errorCount > 0) {
       toast.error(`Failed to upload ${errorCount} photo${errorCount > 1 ? "s" : ""}`);
     }
+  };
+
+  // Save photo to device
+  const handleSaveToDevice = async (photo: LocalPhoto) => {
+    try {
+      const url = photo.dataUrl;
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `kodayak-${photo.id}.jpg`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      toast.success("Photo saved to device");
+    } catch {
+      toast.error("Failed to save photo");
+    }
+  };
+
+  // Save all local photos to device
+  const handleSaveAllToDevice = async () => {
+    for (const photo of localPhotos) {
+      await handleSaveToDevice(photo);
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    }
+    toast.success(`Saved ${localPhotos.length} photos to device`);
   };
 
   const handleDeleteLocal = async (photo: LocalPhoto) => {
@@ -215,27 +298,72 @@ export default function GalleryPage() {
             </div>
           </div>
 
-          {/* Upload button */}
-          {localPhotos.length > 0 && (
-            <Button
-              onClick={handleUploadAll}
-              disabled={isUploading}
-              style={{ backgroundColor: primaryColor }}
-              className="text-white"
-            >
-              {isUploading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {uploadProgress.current}/{uploadProgress.total}
-                </>
-              ) : (
-                <>
-                  <CloudUpload className="mr-2 h-4 w-4" />
-                  Upload All ({localPhotos.length})
-                </>
-              )}
-            </Button>
-          )}
+          {/* Action buttons */}
+          <div className="flex items-center gap-2">
+            {/* Upload status indicator */}
+            {guestStatus && (
+              <div className="hidden sm:flex items-center gap-2 text-sm text-gray-400">
+                <span>{guestStatus.uploadedCount}/{guestStatus.limit} uploaded</span>
+              </div>
+            )}
+
+            {/* Selection mode toggle */}
+            {localPhotos.length > 0 && !isSelectionMode && !hasReachedLimit && (
+              <Button
+                onClick={() => setIsSelectionMode(true)}
+                variant="outline"
+                size="sm"
+                className="border-white/20 text-white hover:bg-white/10"
+              >
+                Select to Upload
+              </Button>
+            )}
+
+            {/* Selection mode actions */}
+            {isSelectionMode && (
+              <>
+                <Button
+                  onClick={selectedForUpload.size === localPhotos.length ? deselectAll : selectAll}
+                  variant="outline"
+                  size="sm"
+                  className="border-white/20 text-white hover:bg-white/10"
+                >
+                  {selectedForUpload.size === localPhotos.length ? "Deselect All" : "Select All"}
+                </Button>
+                <Button
+                  onClick={() => {
+                    setIsSelectionMode(false);
+                    setSelectedForUpload(new Set());
+                  }}
+                  variant="ghost"
+                  size="sm"
+                  className="text-gray-400 hover:text-white"
+                >
+                  Cancel
+                </Button>
+                {selectedForUpload.size > 0 && (
+                  <Button
+                    onClick={handleUploadSelected}
+                    disabled={isUploading}
+                    style={{ backgroundColor: primaryColor }}
+                    className="text-white"
+                  >
+                    {isUploading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        {uploadProgress.current}/{uploadProgress.total}
+                      </>
+                    ) : (
+                      <>
+                        <CloudUpload className="mr-2 h-4 w-4" />
+                        Upload ({selectedForUpload.size})
+                      </>
+                    )}
+                  </Button>
+                )}
+              </>
+            )}
+          </div>
         </div>
       </header>
 
@@ -255,29 +383,62 @@ export default function GalleryPage() {
         </div>
       ) : (
         <>
+          {/* Upload limit warning */}
+          {hasReachedLimit && localPhotos.length > 0 && (
+            <div className="mx-auto max-w-7xl px-4 pt-4">
+              <div className="rounded-lg bg-red-500/10 border border-red-500/20 p-3 text-center">
+                <p className="text-sm text-red-400">
+                  You&apos;ve reached your upload limit ({guestStatus?.limit} photos). Save your remaining photos to your device!
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Pending photos section */}
           {localPhotos.length > 0 && (
             <div className="mx-auto max-w-7xl p-4">
               <div className="mb-2 flex items-center justify-between">
                 <h2 className="text-sm font-medium text-yellow-500">
-                  Pending Upload ({localPhotos.length})
+                  Your Photos ({localPhotos.length})
+                  {!hasReachedLimit && remainingUploads < localPhotos.length && (
+                    <span className="ml-2 text-gray-400">
+                      (can upload {remainingUploads} more)
+                    </span>
+                  )}
                 </h2>
-                <Button
-                  onClick={() => clearPhotos()}
-                  variant="ghost"
-                  size="sm"
-                  className="text-red-400 hover:bg-red-400/10 hover:text-red-300"
-                >
-                  <Trash2 className="mr-1 h-3 w-3" />
-                  Clear All
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    onClick={handleSaveAllToDevice}
+                    variant="ghost"
+                    size="sm"
+                    className="text-gray-400 hover:bg-white/10 hover:text-white"
+                  >
+                    <Save className="mr-1 h-3 w-3" />
+                    Save All
+                  </Button>
+                  <Button
+                    onClick={() => clearPhotos()}
+                    variant="ghost"
+                    size="sm"
+                    className="text-red-400 hover:bg-red-400/10 hover:text-red-300"
+                  >
+                    <Trash2 className="mr-1 h-3 w-3" />
+                    Delete All
+                  </Button>
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
                 {localPhotos.map((photo) => (
                   <button
                     key={photo.id}
-                    onClick={() => setSelectedPhoto(photo)}
-                    className="group relative aspect-square overflow-hidden rounded-lg bg-gray-900 ring-2 ring-yellow-500"
+                    onClick={() => isSelectionMode ? togglePhotoSelection(photo.id) : setSelectedPhoto(photo)}
+                    className={`group relative aspect-square overflow-hidden rounded-lg bg-gray-900 transition-all ${
+                      isSelectionMode && selectedForUpload.has(photo.id)
+                        ? "ring-2 ring-green-500"
+                        : isSelectionMode
+                        ? "ring-2 ring-white/20"
+                        : "ring-2 ring-yellow-500"
+                    }`}
                   >
                     <img
                       src={photo.dataUrl}
@@ -285,9 +446,17 @@ export default function GalleryPage() {
                       className="h-full w-full object-cover transition-transform group-hover:scale-105"
                     />
                     <div className="absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/20" />
-                    <div className="absolute right-1 top-1 rounded-full bg-yellow-500 p-1">
-                      <Upload className="h-3 w-3 text-black" />
-                    </div>
+                    {isSelectionMode ? (
+                      <div className={`absolute right-1 top-1 rounded-full p-1 ${
+                        selectedForUpload.has(photo.id) ? "bg-green-500" : "bg-white/20"
+                      }`}>
+                        <Check className={`h-3 w-3 ${selectedForUpload.has(photo.id) ? "text-white" : "text-white/50"}`} />
+                      </div>
+                    ) : (
+                      <div className="absolute right-1 top-1 rounded-full bg-yellow-500 p-1">
+                        <Upload className="h-3 w-3 text-black" />
+                      </div>
+                    )}
                   </button>
                 ))}
               </div>
@@ -356,15 +525,26 @@ export default function GalleryPage() {
                     )}
                   </div>
                   {isLocalPhoto(selectedPhoto) ? (
-                    <Button
-                      onClick={() => handleDeleteLocal(selectedPhoto)}
-                      variant="outline"
-                      size="sm"
-                      className="border-red-400 text-red-400 hover:bg-red-400/10"
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Delete
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        onClick={() => handleSaveToDevice(selectedPhoto)}
+                        variant="outline"
+                        size="sm"
+                        className="border-white text-white hover:bg-white/10"
+                      >
+                        <Save className="mr-2 h-4 w-4" />
+                        Save
+                      </Button>
+                      <Button
+                        onClick={() => handleDeleteLocal(selectedPhoto)}
+                        variant="outline"
+                        size="sm"
+                        className="border-red-400 text-red-400 hover:bg-red-400/10"
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete
+                      </Button>
+                    </div>
                   ) : (
                     <Button
                       onClick={() => handleDownload(selectedPhoto)}

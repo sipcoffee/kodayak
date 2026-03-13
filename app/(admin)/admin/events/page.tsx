@@ -63,7 +63,7 @@ interface Event {
   name: string;
   slug: string;
   status: "DRAFT" | "ACTIVE" | "PAUSED" | "EXPIRED" | "COMPLETED";
-  photoLimit: number;
+  guestPhotoLimit: number;
   expiresAt: string;
   isGalleryPublic: boolean;
   createdAt: string;
@@ -109,7 +109,7 @@ export default function AdminEventsPage() {
   const [editForm, setEditForm] = useState({
     name: "",
     status: "",
-    photoLimit: "",
+    guestPhotoLimit: "",
     expiresAt: "",
     isGalleryPublic: false,
   });
@@ -138,7 +138,7 @@ export default function AdminEventsPage() {
     setEditForm({
       name: event.name,
       status: event.status,
-      photoLimit: event.photoLimit.toString(),
+      guestPhotoLimit: event.guestPhotoLimit.toString(),
       expiresAt: new Date(event.expiresAt).toISOString().split("T")[0],
       isGalleryPublic: event.isGalleryPublic,
     });
@@ -283,7 +283,7 @@ export default function AdminEventsPage() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {event._count.photos} / {event.photoLimit}
+                        {event._count.photos} ({event.guestPhotoLimit}/guest)
                       </TableCell>
                       <TableCell>
                         {new Date(event.expiresAt).toLocaleDateString()}
@@ -393,13 +393,13 @@ export default function AdminEventsPage() {
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="photoLimit">Photo Limit</Label>
+                <Label htmlFor="guestPhotoLimit">Guest Photo Limit</Label>
                 <Input
-                  id="photoLimit"
+                  id="guestPhotoLimit"
                   type="number"
-                  value={editForm.photoLimit}
+                  value={editForm.guestPhotoLimit}
                   onChange={(e) =>
-                    setEditForm({ ...editForm, photoLimit: e.target.value })
+                    setEditForm({ ...editForm, guestPhotoLimit: e.target.value })
                   }
                 />
               </div>

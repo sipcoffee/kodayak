@@ -118,16 +118,16 @@ model Verification {
 // ============ APP MODELS ============
 
 model Plan {
-  id            String   @id @default(cuid())
-  name          String
-  type          PlanType @unique
-  price         Decimal  @db.Decimal(10, 2)
-  photoLimit    Int
-  eventDuration Int
-  features      String[]
-  isActive      Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id              String   @id @default(cuid())
+  name            String
+  type            PlanType @unique
+  price           Decimal  @db.Decimal(10, 2)
+  guestPhotoLimit Int      @default(10) // Photos each guest can upload
+  eventDuration   Int
+  features        String[]
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   payments  Payment[]
   userFilms UserFilm[]
@@ -143,7 +143,7 @@ model Event {
   slug            String      @unique
   coverImage      String?
   status          EventStatus @default(DRAFT)
-  photoLimit      Int
+  guestPhotoLimit Int         @default(10) // Copied from plan at creation
   expiresAt       DateTime
   isGalleryPublic Boolean     @default(false)
 
@@ -159,6 +159,7 @@ model Event {
   userFilm        UserFilm?   @relation(fields: [userFilmId], references: [id])
   photos          Photo[]
   payment         Payment?
+  guestUploads    GuestUpload[]
 }
 
 model Photo {
@@ -252,4 +253,19 @@ model FilmCode {
 
   @@index([code])
   @@index([status])
+}
+
+model GuestUpload {
+  id        String   @id @default(cuid())
+  eventId   String
+  guestId   String   // Anonymous session ID
+  guestName String?  // Nickname entered by guest
+  count     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, guestId])
+  @@index([eventId])
 }

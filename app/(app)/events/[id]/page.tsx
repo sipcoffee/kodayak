@@ -41,7 +41,7 @@ interface Event {
   description: string | null;
   slug: string;
   status: "DRAFT" | "ACTIVE" | "PAUSED" | "EXPIRED" | "COMPLETED";
-  photoLimit: number;
+  guestPhotoLimit: number;
   expiresAt: string;
   isGalleryPublic: boolean;
   primaryColor: string;
@@ -225,8 +225,11 @@ export default function EventDetailsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {event._count.photos} / {event.photoLimit}
+              {event._count.photos}
             </div>
+            <p className="text-xs text-muted-foreground">
+              {event.guestPhotoLimit} per guest
+            </p>
           </CardContent>
         </Card>
 

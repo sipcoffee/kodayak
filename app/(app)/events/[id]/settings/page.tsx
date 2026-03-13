@@ -27,7 +27,7 @@ interface Event {
   description: string | null;
   slug: string;
   status: "DRAFT" | "ACTIVE" | "PAUSED" | "EXPIRED" | "COMPLETED";
-  photoLimit: number;
+  guestPhotoLimit: number;
   expiresAt: string;
   isGalleryPublic: boolean;
   primaryColor: string;
@@ -52,7 +52,7 @@ export default function EventSettingsPage() {
     name: "",
     description: "",
     status: "DRAFT" as Event["status"],
-    photoLimit: "",
+    guestPhotoLimit: "",
     expiresAt: "",
     isGalleryPublic: false,
     primaryColor: "#E91E63",
@@ -66,7 +66,7 @@ export default function EventSettingsPage() {
         name: event.name,
         description: event.description || "",
         status: event.status,
-        photoLimit: event.photoLimit.toString(),
+        guestPhotoLimit: event.guestPhotoLimit.toString(),
         expiresAt: new Date(event.expiresAt).toISOString().split("T")[0],
         isGalleryPublic: event.isGalleryPublic,
         primaryColor: event.primaryColor || "#E91E63",
@@ -243,15 +243,16 @@ export default function EventSettingsPage() {
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="photoLimit">Photo Limit</Label>
+                <Label htmlFor="guestPhotoLimit">Guest Photo Limit</Label>
                 <Input
-                  id="photoLimit"
+                  id="guestPhotoLimit"
                   type="number"
                   min="1"
-                  max="10000"
-                  value={formData.photoLimit}
-                  onChange={(e) => setFormData({ ...formData, photoLimit: e.target.value })}
+                  max="100"
+                  value={formData.guestPhotoLimit}
+                  onChange={(e) => setFormData({ ...formData, guestPhotoLimit: e.target.value })}
                 />
+                <p className="text-xs text-muted-foreground">Max photos each guest can upload</p>
               </div>
 
               <div className="space-y-2">

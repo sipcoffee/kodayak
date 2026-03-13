@@ -8,7 +8,7 @@ export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
 
-    const photo = formData.get("photo") as File | null;
+    const photoFile = formData.get("photo") as File | null;
     const eventId = formData.get("eventId") as string;
     const guestId = formData.get("guestId") as string;
     const guestName = formData.get("guestName") as string | null;
@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     const height = parseInt(formData.get("height") as string) || null;
 
     // Validate required fields
-    if (!photo || !eventId || !guestId) {
+    if (!photoFile || !eventId || !guestId) {
       return NextResponse.json(
         { error: "Missing required fields: photo, eventId, guestId" },
         { status: 400 }
@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate file type
-    if (!photo.type.startsWith("image/")) {
+    if (!photoFile.type.startsWith("image/")) {
       return NextResponse.json(
         { error: "Invalid file type. Only images are allowed." },
         { status: 400 }
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
 
     // Check file size (max 10MB)
     const maxSize = 10 * 1024 * 1024;
-    if (photo.size > maxSize) {
+    if (photoFile.size > maxSize) {
       return NextResponse.json(
         { error: "File too large. Maximum size is 10MB." },
         { status: 400 }
@@ -43,9 +43,6 @@ export async function POST(request: NextRequest) {
     // Verify event exists and is active
     const event = await prisma.event.findUnique({
       where: { id: eventId },
-      include: {
-        _count: { select: { photos: true } },
-      },
     });
 
     if (!event) {
@@ -58,14 +55,6 @@ export async function POST(request: NextRequest) {
     if (event.status !== "ACTIVE") {
       return NextResponse.json(
         { error: "Event is not active" },
-        { status: 400 }
-      );
-    }
-
-    // Check photo limit
-    if (event._count.photos >= event.photoLimit) {
-      return NextResponse.json(
-        { error: "Event has reached its photo limit" },
         { status: 400 }
       );
     }
@@ -83,26 +72,68 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Get or create guest upload record
+    let guestUpload = await prisma.guestUpload.findUnique({
+      where: {
+        eventId_guestId: { eventId, guestId },
+      },
+    });
+
+    if (!guestUpload) {
+      guestUpload = await prisma.guestUpload.create({
+        data: {
+          eventId,
+          guestId,
+          guestName,
+          count: 0,
+        },
+      });
+    }
+
+    // Check guest photo limit
+    if (guestUpload.count >= event.guestPhotoLimit) {
+      return NextResponse.json(
+        { error: `You have reached your upload limit of ${event.guestPhotoLimit} photos` },
+        { status: 400 }
+      );
+    }
+
     // Generate unique filename
-    const extension = photo.name.split(".").pop() || "jpg";
+    const extension = photoFile.name.split(".").pop() || "jpg";
     const filename = `${nanoid()}.${extension}`;
 
     // Upload to R2
-    const bytes = await photo.arrayBuffer();
+    const bytes = await photoFile.arrayBuffer();
     const buffer = Buffer.from(bytes);
-    const { url } = await uploadToR2(buffer, filename, photo.type);
+    const { url } = await uploadToR2(buffer, filename, photoFile.type);
 
-    const savedPhoto = await prisma.photo.create({
-      data: {
-        eventId,
-        url,
-        thumbnailUrl: url, // For now, use same URL - can generate actual thumbnails later
-        guestId,
-        guestName,
-        width,
-        height,
-        size: photo.size,
-      },
+    // Create photo and increment guest upload count in transaction
+    const savedPhoto = await prisma.$transaction(async (tx) => {
+      const newPhoto = await tx.photo.create({
+        data: {
+          eventId,
+          url,
+          thumbnailUrl: url, // For now, use same URL - can generate actual thumbnails later
+          guestId,
+          guestName,
+          width,
+          height,
+          size: photoFile.size,
+        },
+      });
+
+      // Increment guest upload count
+      await tx.guestUpload.update({
+        where: {
+          eventId_guestId: { eventId, guestId },
+        },
+        data: {
+          count: { increment: 1 },
+          guestName: guestName || undefined, // Update name if provided
+        },
+      });
+
+      return newPhoto;
     });
 
     return NextResponse.json({
