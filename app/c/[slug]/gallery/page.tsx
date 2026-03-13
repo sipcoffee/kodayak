@@ -276,7 +276,7 @@ export default function GalleryPage() {
   const allPhotos = [...localPhotos, ...uploadedPhotos];
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-black pb-24 overflow-y-auto">
       {/* Header */}
       <header className="sticky top-0 z-20 border-b border-white/10 bg-black/95 backdrop-blur-sm">
         <div className="mx-auto flex max-w-7xl items-center justify-between p-4">
@@ -317,7 +317,7 @@ export default function GalleryPage() {
 
         {/* Selection mode bar - separate row for clarity */}
         {isSelectionMode && (
-          <div className="border-t border-white/10 bg-gray-900/80 px-4 py-3">
+          <div className="border-t border-white/10 bg-gray-900 px-4 py-3">
             <div className="mx-auto flex max-w-7xl items-center justify-between">
               <div className="flex items-center gap-3">
                 <span className="text-sm text-white">
@@ -325,9 +325,9 @@ export default function GalleryPage() {
                 </span>
                 <Button
                   onClick={selectedForUpload.size === Math.min(localPhotos.length, remainingUploads) ? deselectAll : selectAll}
-                  variant="ghost"
                   size="sm"
-                  className="text-gray-300 hover:text-white hover:bg-white/10"
+                  variant="outline"
+                  className="border-gray-600 bg-gray-800 text-white hover:bg-gray-700"
                 >
                   {selectedForUpload.size === Math.min(localPhotos.length, remainingUploads) ? "Deselect All" : "Select All"}
                 </Button>
@@ -338,9 +338,9 @@ export default function GalleryPage() {
                     setIsSelectionMode(false);
                     setSelectedForUpload(new Set());
                   }}
-                  variant="ghost"
                   size="sm"
-                  className="text-gray-400 hover:text-white hover:bg-white/10"
+                  variant="outline"
+                  className="border-gray-600 text-gray-300 hover:text-white hover:bg-gray-700"
                 >
                   Cancel
                 </Button>
