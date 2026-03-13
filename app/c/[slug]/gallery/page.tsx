@@ -292,44 +292,47 @@ export default function GalleryPage() {
             <div>
               <h1 className="text-lg font-semibold text-white">{event.name}</h1>
               <p className="text-sm text-gray-400">
-                {uploadedPhotos.length} uploaded
-                {localPhotos.length > 0 && `, ${localPhotos.length} pending`}
+                {guestStatus ? (
+                  <>{guestStatus.uploadedCount}/{guestStatus.limit} uploaded</>
+                ) : (
+                  <>{uploadedPhotos.length} uploaded</>
+                )}
+                {localPhotos.length > 0 && ` · ${localPhotos.length} saved locally`}
               </p>
             </div>
           </div>
 
-          {/* Action buttons */}
-          <div className="flex items-center gap-2">
-            {/* Upload status indicator */}
-            {guestStatus && (
-              <div className="hidden sm:flex items-center gap-2 text-sm text-gray-400">
-                <span>{guestStatus.uploadedCount}/{guestStatus.limit} uploaded</span>
-              </div>
-            )}
+          {/* Selection mode toggle - only show when NOT in selection mode */}
+          {localPhotos.length > 0 && !isSelectionMode && !hasReachedLimit && (
+            <Button
+              onClick={() => setIsSelectionMode(true)}
+              size="sm"
+              className="bg-pink-600 hover:bg-pink-700 text-white"
+            >
+              <CloudUpload className="mr-2 h-4 w-4" />
+              Upload
+            </Button>
+          )}
+        </div>
 
-            {/* Selection mode toggle */}
-            {localPhotos.length > 0 && !isSelectionMode && !hasReachedLimit && (
-              <Button
-                onClick={() => setIsSelectionMode(true)}
-                variant="outline"
-                size="sm"
-                className="border-white/20 text-white hover:bg-white/10"
-              >
-                Select to Upload
-              </Button>
-            )}
-
-            {/* Selection mode actions */}
-            {isSelectionMode && (
-              <>
+        {/* Selection mode bar - separate row for clarity */}
+        {isSelectionMode && (
+          <div className="border-t border-white/10 bg-gray-900/80 px-4 py-3">
+            <div className="mx-auto flex max-w-7xl items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-white">
+                  {selectedForUpload.size} of {Math.min(localPhotos.length, remainingUploads)} selected
+                </span>
                 <Button
-                  onClick={selectedForUpload.size === localPhotos.length ? deselectAll : selectAll}
-                  variant="outline"
+                  onClick={selectedForUpload.size === Math.min(localPhotos.length, remainingUploads) ? deselectAll : selectAll}
+                  variant="ghost"
                   size="sm"
-                  className="border-white/20 text-white hover:bg-white/10"
+                  className="text-gray-300 hover:text-white hover:bg-white/10"
                 >
-                  {selectedForUpload.size === localPhotos.length ? "Deselect All" : "Select All"}
+                  {selectedForUpload.size === Math.min(localPhotos.length, remainingUploads) ? "Deselect All" : "Select All"}
                 </Button>
+              </div>
+              <div className="flex items-center gap-2">
                 <Button
                   onClick={() => {
                     setIsSelectionMode(false);
@@ -337,34 +340,32 @@ export default function GalleryPage() {
                   }}
                   variant="ghost"
                   size="sm"
-                  className="text-gray-400 hover:text-white"
+                  className="text-gray-400 hover:text-white hover:bg-white/10"
                 >
                   Cancel
                 </Button>
-                {selectedForUpload.size > 0 && (
-                  <Button
-                    onClick={handleUploadSelected}
-                    disabled={isUploading}
-                    style={{ backgroundColor: primaryColor }}
-                    className="text-white"
-                  >
-                    {isUploading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        {uploadProgress.current}/{uploadProgress.total}
-                      </>
-                    ) : (
-                      <>
-                        <CloudUpload className="mr-2 h-4 w-4" />
-                        Upload ({selectedForUpload.size})
-                      </>
-                    )}
-                  </Button>
-                )}
-              </>
-            )}
+                <Button
+                  onClick={handleUploadSelected}
+                  disabled={isUploading || selectedForUpload.size === 0}
+                  size="sm"
+                  className="bg-pink-600 hover:bg-pink-700 text-white disabled:opacity-50"
+                >
+                  {isUploading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {uploadProgress.current}/{uploadProgress.total}
+                    </>
+                  ) : (
+                    <>
+                      <CloudUpload className="mr-2 h-4 w-4" />
+                      Upload {selectedForUpload.size > 0 ? `(${selectedForUpload.size})` : ""}
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
           </div>
-        </div>
+        )}
       </header>
 
       {/* Empty state */}
@@ -375,7 +376,7 @@ export default function GalleryPage() {
           <p className="mb-6 text-gray-400">Be the first to capture a moment!</p>
           <Button
             onClick={() => router.push(`/c/${slug}`)}
-            style={{ backgroundColor: primaryColor }}
+            className="bg-pink-600 hover:bg-pink-700 text-white"
           >
             <Camera className="mr-2 h-4 w-4" />
             Take a Photo
@@ -566,8 +567,7 @@ export default function GalleryPage() {
       {/* Floating camera button */}
       <Button
         onClick={() => router.push(`/c/${slug}`)}
-        className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg"
-        style={{ backgroundColor: primaryColor }}
+        className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg bg-pink-600 hover:bg-pink-700 text-white"
       >
         <Camera className="h-6 w-6" />
       </Button>
