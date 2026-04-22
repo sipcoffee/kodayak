@@ -1,36 +1,80 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Kodayak
+
+[![Live Demo](https://img.shields.io/badge/Live_Demo-kodayak.com-blue?style=for-the-badge)](https://www.kodayak.com/)
+
+A collaborative event photography platform that transforms any event into a shared photo experience. Guests scan a QR code and start capturing memories instantly — no app download required.
+
+## Features
+
+- **No App Required** - Guests simply scan a QR code and start capturing. Works instantly on any smartphone browser.
+- **Works Offline** - Photos are queued locally and uploaded automatically when connection is restored.
+- **Real-time Gallery** - Watch your gallery grow live as guests capture moments.
+- **QR Code Sharing** - Print on table cards, display on screens, or include in invitations.
+- **Bulk Download** - Download all photos at once in original quality.
+- **Secure & Private** - Photos are encrypted and private, with full access control.
+
+## Tech Stack
+
+- **Framework:** Next.js 16 with Turbopack
+- **Frontend:** React 19, Tailwind CSS v4
+- **Database:** PostgreSQL with Prisma ORM
+- **Authentication:** Better Auth
+- **Storage:** Cloudflare R2 (S3-compatible)
+- **UI Components:** shadcn/ui, Radix UI
+- **PWA:** next-pwa for offline support
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- Node.js 18+
+- PostgreSQL database
+- Cloudflare R2 bucket (or S3-compatible storage)
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Installation
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Clone the repository and install dependencies:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+   ```bash
+   npm install
+   ```
 
-## Learn More
+2. Set up environment variables:
 
-To learn more about Next.js, take a look at the following resources:
+   ```bash
+   cp .env.example .env
+   ```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+   Configure your database URL, R2 credentials, and auth secrets.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+3. Set up the database:
 
-## Deploy on Vercel
+   ```bash
+   npm run db:push
+   ```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+4. Run the development server:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+   ```bash
+   npm run dev
+   ```
+
+5. Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+## Scripts
+
+| Command               | Description                                  |
+| --------------------- | -------------------------------------------- |
+| `npm run dev`         | Start development server with Turbopack      |
+| `npm run dev:network` | Start dev server accessible on local network |
+| `npm run build`       | Build for production                         |
+| `npm run start`       | Start production server                      |
+| `npm run lint`        | Run ESLint                                   |
+| `npm run db:push`     | Push schema changes to database              |
+| `npm run db:migrate`  | Run database migrations                      |
+| `npm run db:studio`   | Open Prisma Studio                           |
+| `npm run db:seed`     | Seed the database                            |
+
+## License
+
+Private - All rights reserved.
